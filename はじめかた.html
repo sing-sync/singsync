@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SingSync プレイヤー はじめかた</title>
+<style>
+  :root{ --accent:#7C6CFF; --ink:#1f2430; --sub:#5a6172; --warn:#b45309; --warnbg:#fff7ed; --okbg:#f0fdf4; }
+  *{ box-sizing:border-box; }
+  body{ margin:0; font-family:"Hiragino Kaku Gothic ProN","Yu Gothic",sans-serif; color:var(--ink);
+        line-height:1.9; background:#fafafa; }
+  .page{ max-width:860px; margin:0 auto; padding:32px 28px 80px; background:#fff; }
+  h1{ font-size:26px; border-bottom:3px solid var(--accent); padding-bottom:10px; }
+  h1 .note{ color:var(--accent); }
+  h2{ font-size:20px; margin-top:44px; padding:6px 12px; background:#f3f1ff; border-left:6px solid var(--accent); }
+  h2 .time{ float:right; font-size:13px; color:var(--sub); font-weight:normal; }
+  ol.steps{ padding-left:24px; }
+  ol.steps li{ margin-bottom:10px; }
+  code,.path{ background:#f1f5f9; border-radius:4px; padding:1px 7px; font-family:ui-monospace,Menlo,monospace; font-size:13px; }
+  .warn{ background:var(--warnbg); border:1px solid #fdba74; border-radius:8px; padding:10px 16px; margin:14px 0; }
+  .warn b:first-child{ color:var(--warn); }
+  .ok{ background:var(--okbg); border:1px solid #86efac; border-radius:8px; padding:10px 16px; margin:14px 0; }
+  .fig{ background:#0F1115; color:#EDEFF5; border-radius:10px; padding:16px 20px; font-family:ui-monospace,Menlo,monospace;
+        font-size:13px; white-space:pre; overflow-x:auto; }
+  .en{ font-weight:bold; }
+  .kv{ color:var(--sub); font-size:13px; }
+  .cheat{ border:2px dashed var(--accent); border-radius:12px; padding:18px 22px; margin-top:12px; }
+  .cheat h3{ margin-top:0; }
+  table{ border-collapse:collapse; width:100%; font-size:14px; }
+  td,th{ border:1px solid #d7dbe4; padding:8px 12px; text-align:left; vertical-align:top; }
+  th{ background:#f3f1ff; white-space:nowrap; }
+  @media print{
+    body{ background:#fff; }
+    .page{ max-width:none; padding:0; }
+    h2{ break-after:avoid; }
+    .cheat{ break-inside:avoid; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<h1><span class="note">♪</span> SingSync プレイヤー はじめかた</h1>
+<p>つくったカラオケPVを、生徒のiPadに<b>QRコードだけで</b>配れるようにする手順書です。<br>
+<b>最初の設定はぜんぶで30分ほど。いちど済ませれば、あとは曲1つにつき5分です。</b></p>
+
+<div class="fig">じぶんのMac                GitHub（無料）             生徒のiPad
+┌──────────────┐   アップロード   ┌──────────────┐   QRを読む   ┌──────────────┐
+│ SingSyncで      │ ───────────▶ │ 公開ページ      │ ─────────▶ │ ブラウザで      │
+│ 曲パックを書き出す │  (GitHub Desktop) │ ＝プレイヤー置き場 │  (カメラ)     │ うたう・穴あき練習 │
+└──────────────┘                └──────────────┘             └──────────────┘</div>
+
+<div class="warn"><b>さきに知っておくこと：</b>GitHubの公開ページは「URLを知っていれば誰でも見られる」場所です（検索にはほぼ載りません）。<b>音源と歌詞がインターネットに置かれる</b>ことになるので、Sunoで自作した曲だけを使い、曲名やファイル名に学校名・生徒の名前を入れないでください。</div>
+
+<h2>0. 用意するもの<span class="time">確認だけ</span></h2>
+<ul>
+  <li>デスクトップの <span class="path">singsync-site</span> フォルダ（この手順書が入っているフォルダ。公開する中身一式です）</li>
+  <li>いまお使いのGitHubアカウント（GitHub Desktopでサインイン済みのもの。<b>新しく作る必要も、サインアウトする必要もありません</b>）</li>
+  <li>GitHub Desktop アプリ（ふだんお使いのもので大丈夫です）</li>
+</ul>
+
+<h2>1. 公開用の名前（Organization）をつくる<span class="time">約5分</span></h2>
+<p>生徒に配るURLには、置き場所の名前がそのまま出ます。ふだんのアカウント名を出したくないので、<b>公開用の名前を1つ「組織（Organization）」として無料でつくります</b>。いまのアカウントにぶら下がる形なので、<b>アカウントを増やす必要も、GitHub Desktopをサインアウトする必要もありません</b>。</p>
+<ol class="steps">
+  <li>ブラウザで <code>github.com</code> にログインし、右上のアイコン → <span class="en">Your organizations</span> → <span class="en">New organization</span></li>
+  <li>プランは <span class="en">Free</span>（無料・0円）を選ぶ</li>
+  <li><span class="en">Organization name</span> に<b>公開用の名前</b>を入れる（例 <code>singsync-eigo</code>）</li>
+  <li><span class="en">Contact email</span> は、いまお使いのメールアドレスのままでOK</li>
+  <li>「<span class="en">This organization belongs to</span>」は <span class="en">My personal account</span>（個人用）を選ぶ</li>
+  <li><span class="en">Next</span> → 仲間を誘う画面が出たら、<b>何も入れずにスキップ</b>（ひとりで使います）</li>
+</ol>
+<div class="warn"><b>名前の決め方：</b>半角の英小文字・数字・ハイフンだけが使えます。<b>GitHub全体で早い者勝ち</b>なので、すでに使われている名前は赤い字ではじかれます（別の名前にすれば大丈夫です）。<b>学校名・本名・生徒に関わる言葉は入れないでください。</b>この名前がそのまま <code>https://この名前.github.io/…</code> になります。</div>
+<p class="kv">画面は英語ですが、この手順書のとおりに進めば大丈夫です。以降この手順書では、ここで決めた名前を <b>「組織名」</b>と書きます。</p>
+
+<h2>2. 公開リポジトリ（GitHub上のフォルダ）をつくる<span class="time">約5分</span></h2>
+<ol class="steps">
+  <li>GitHubにログインした状態で、右上の「＋」→ <span class="en">New repository</span></li>
+  <li><b><span class="en">Owner</span>（左のプルダウン）を、手順1で決めた「組織名」に切り替える</b> ← ここが最重要</li>
+  <li><span class="en">Repository name</span> に <code>singsync</code> と入力（別の名前でもOK。URLの一部になります）</li>
+  <li><b>公開設定は必ず <span class="en">Public</span> を選ぶ</b></li>
+  <li>ほかは何も変えずに <span class="en">Create repository</span></li>
+</ol>
+<div class="warn"><b>ここでつまずきがち①：</b><span class="en">Owner</span> が自分のアカウント名のままだと、<b>せっかく組織を作ったのにURLに自分のIDが出てしまいます</b>。作成ボタンを押す前に、入力欄の左が <code>組織名 /</code> になっているか指差し確認を。（まちがえても、あとから <span class="en">Settings</span> のいちばん下にある <span class="en">Transfer ownership</span> で組織に引っ越せます。）</div>
+<div class="warn"><b>ここでつまずきがち②：</b>うっかり <span class="en">Private</span>（非公開）にすると、<b>無料プランでは公開ページ（Pages）が使えません</b>。いちばん多い事故です。Public になっているか指差し確認を。</div>
+
+<h2>3. GitHub Desktopで自分のMacにつなぐ<span class="time">約5分</span></h2>
+<ol class="steps">
+  <li>GitHub Desktop を開く（<b>いまのアカウントのままでOK。サインアウトはしないでください</b>）</li>
+  <li><span class="en">File → Clone Repository</span> → 一覧から <code>組織名/singsync</code> を選んで <span class="en">Clone</span>（保存先はそのままでOK）</li>
+</ol>
+<p>これで「GitHub上のフォルダ」と「Macの中のフォルダ」がつながりました。一覧に出てこないときは、<span class="en">URL</span> のタブに <code>組織名/singsync</code> と直接打ちこんでも入れます。</p>
+<div class="warn"><b>任意（気になる方だけ）：</b>アップロードの記録には、ふだんお使いのお名前とメールアドレスが残ります。そこも隠したいときは、GitHub Desktop の <span class="en">Repository → Repository settings → Git config</span> で <span class="en">Use my local Git config</span> を選び、名前を公開用の名前に、メールを <code>〇〇@users.noreply.github.com</code>（GitHubの <span class="en">Settings → Emails</span> に書いてある非公開用のアドレス）に変えてください。<b>このリポジトリだけ</b>の設定なので、ほかの作業には影響しません。</div>
+
+<h2>4. 公開する中身を入れて、アップロードする<span class="time">約5分</span></h2>
+<ol class="steps">
+  <li>Finderでデスクトップの <span class="path">singsync-site</span> を開く</li>
+  <li><b>隠れているファイルも見えるように</b>、<code>⌘（コマンド）+ Shift + .（ピリオド）</code> を押す（<span class="path">.nojekyll</span> という薄字のファイルが出てきます。地味ですが公開に必要なファイルです）</li>
+  <li><code>⌘ + A</code> で中身を全部選択 → <code>⌘ + C</code> でコピー</li>
+  <li><b>貼り付け先を開く：</b>GitHub Desktopの上のメニューから <span class="en">Repository → Show in Finder</span> を選ぶ。手順3でクローンした <span class="path">singsync</span> フォルダが一発で開きます（フォルダを自分で探し回らなくて大丈夫です）</li>
+  <li>開いたFinderのウィンドウで <code>⌘ + V</code> を押して貼り付ける</li>
+  <li>GitHub Desktopに戻ると、左に変更一覧が出ています。左下の欄に「はじめての公開」などと書いて <span class="en">Commit to main</span> を押す（＝荷造り）</li>
+  <li>上に出る <span class="en">Push origin</span> を押す（＝発送。<b>ここまでやって完了</b>です）</li>
+</ol>
+<div class="warn"><b>ここでつまずきがち①：</b><span class="path">singsync-site</span> という<b>フォルダごと</b>貼り付けると失敗します（ページが404になります）。<b>中身だけ</b>を貼り付けて、<span class="path">index.html</span> がリポジトリの<b>いちばん上の階層</b>に来るようにしてください。</div>
+<div class="fig">正しい形:                       まちがい:
+singsync/                      singsync/
+├─ index.html   ← 直下にある    └─ singsync-site/
+├─ songs/                          ├─ index.html   ← 1段深い＝404
+└─ はじめかた.html                  └─ songs/</div>
+<div class="warn"><b>ここでつまずきがち②：</b><span class="path">.nojekyll</span> は名前が「.」で始まるため、Finderの初期設定では<b>見えません</b>。上の手順どおり <code>⌘+Shift+.</code> で表示してからコピーしないと、うっかり入れ忘れます（もう一度 <code>⌘+Shift+.</code> を押すと元の表示に戻せます。入れ忘れに気づいたら、あとから同じ手順でこのファイルだけ追加すればOKです）。</div>
+
+<h2>5. 公開スイッチ（Pages）を入れる<span class="time">約5分</span></h2>
+<ol class="steps">
+  <li>ブラウザでGitHubの <code>singsync</code> リポジトリを開き、上の <span class="en">Settings</span> → 左の <span class="en">Pages</span></li>
+  <li><span class="en">Source</span> が <span class="en">Deploy from a branch</span> になっているのを確認</li>
+  <li><span class="en">Branch</span> で <span class="en">main</span> と <span class="en">/(root)</span> を選んで <span class="en">Save</span></li>
+  <li>2〜3分待ってからこのページを再読み込みすると、上部に <code>https://組織名.github.io/singsync/</code> というURLが出ます。これが<b>配布先URL</b>です</li>
+</ol>
+<div class="warn"><b>ここでつまずきがち：</b>Saveのあと、すぐ開くと404が出ます。<b>失敗ではありません</b>。設定をいじり直さず、お茶を一杯飲んでからもう一度開いてください（初回は最大10分ほどかかることがあります）。</div>
+
+<h2>6. 動作確認（サンプル曲入り）<span class="time">約2分</span></h2>
+<p>お手元のスマホのカメラで確認するのがおすすめです。ブラウザで次のURLを開いてください：</p>
+<p><code>https://組織名.github.io/singsync/?song=songs/a-brand-new-day.pack.json</code></p>
+<div class="ok">タイトル画面 →「▶ はじめる」→ 歌詞シートが出て、行をタップすると歌が流れれば成功です 🎉<br>
+確認がすんだら、SingSyncの⑤書き出しにある「📲 iPadに配る」の<b>配布先URL</b>欄に <code>https://組織名.github.io/singsync/</code> を入れておきましょう（QRコードが作れるようになります）。</div>
+
+<h2>7. ふだんの運用（曲を配るとき）<span class="time">曲1つ 約5分</span></h2>
+<div class="cheat">
+<h3>📌 これだけ見ればOK（切りとって机に貼れます）</h3>
+<ol class="steps">
+  <li>SingSyncで曲を開く → <b>⑤書き出し</b> → 「📲 iPadに配る」→ <b>📦 曲パックを書き出す</b></li>
+  <li>ダウンロードされた <span class="path">〇〇.pack.json</span> を、Macの <span class="path">singsync</span> フォルダの <b>songs</b> に入れる</li>
+  <li>GitHub Desktop → <span class="en">Commit to main</span> → <span class="en">Push origin</span></li>
+  <li><b>2〜3分待つ</b> → SingSyncの画面に出ているQRコードを自分のスマホで読んで開けるか確認</li>
+  <li>「🖨 配布カードを印刷」して黒板に貼る（またはQRを大きく映す）</li>
+</ol>
+<p class="kv">・同じファイル名で書き出す＝曲の差し替え（生徒側は再読み込みで新しくなります）<br>
+・穴あき・注釈・よみあげ・ペンは、仕込んだ内容ごと自動で生徒版に入ります</p>
+</div>
+
+<h2>8. アプリ本体を新しくしたとき</h2>
+<p>SingSyncに新機能が増えたら、プレイヤーも差し替えると<b>配布済みの全曲</b>に新機能が届きます。</p>
+<ol class="steps">
+  <li>新しい <span class="path">SingSync.html</span> をコピーして、名前を <span class="path">index.html</span> に変える</li>
+  <li>Macの <span class="path">singsync</span> フォルダの <span class="path">index.html</span> と入れ替える</li>
+  <li>GitHub Desktopで <span class="en">Commit to main</span> → <span class="en">Push origin</span>（曲パックはそのままでOK）</li>
+</ol>
+
+<h2>9. こまったとき Q&amp;A</h2>
+<table>
+  <tr><th>「曲が見つかりません」と出る</th>
+    <td>① Pushしてから2〜3分待ちましたか？ ② ファイル名は songs の中の名前と<b>大文字小文字まで</b>一致していますか？ ③ パックは songs フォルダの中にありますか？</td></tr>
+  <tr><th>ページ自体が404</th>
+    <td>① Pagesの反映待ち（5章）② index.html が直下にない（4章の図）③ リポジトリがPrivateになっている（2章）</td></tr>
+  <tr><th>URLに自分のIDが<br>出てしまった</th>
+    <td>リポジトリの <span class="en">Owner</span> が組織になっていません。GitHubでそのリポジトリの <span class="en">Settings</span> をいちばん下までスクロールし、<span class="en">Transfer ownership</span> で組織名を選べば引っ越せます。そのあとGitHub Desktopで一度 <span class="en">Clone</span> し直してください（Macの中身は消えません）。</td></tr>
+  <tr><th>Clone一覧に<br>組織のものが出ない</th>
+    <td>GitHub Desktopの一覧が古いままです。いちどアプリを閉じて開き直すか、<span class="en">URL</span> タブに <code>組織名/singsync</code> と直接打ちこんでください。<b>サインアウトは不要です。</b></td></tr>
+  <tr><th>曲を差し替えたのに古いまま</th>
+    <td>iPad側でページを再読み込み（アドレスバーの更新ボタン）。それでも古いときは数分おいてもう一度。</td></tr>
+  <tr><th>アップロードで25MBエラー</th>
+    <td>ブラウザからのアップロードは25MBまでです。<b>GitHub Desktop経由（この手順書の方法）なら100MBまで</b>通ります。曲パックが大きいときは④デザインで背景写真を減らすと軽くなります。</td></tr>
+  <tr><th>iPadで音が出ない</th>
+    <td>「▶ はじめる」をタップしてから行をタップ。本体の音量と消音スイッチ（マナーモード）も確認。</td></tr>
+  <tr><th>背景の動画が出ない</th>
+    <td>仕様です。曲パックには容量の都合で動画背景は入りません（写真とグラデーションで表示されます）。</td></tr>
+</table>
+
+<p class="kv" style="margin-top:40px">SingSync プレイヤー — この手順書は印刷してもきれいに出ます（⌘P）。</p>
+</div>
+</body>
+</html>
