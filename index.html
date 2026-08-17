@@ -520,7 +520,8 @@ table.lyrics tr:hover .row-tools{opacity:1}
 .pen-sw.on{border-color:#fff;box-shadow:0 0 0 3px rgba(0,0,0,.4)}
 .pen-sw.dim{opacity:.35}
 .present-root.pen-on .mask-pill,.present-root.pen-on .sheet-follow{bottom:206px} /* トレイのぶん上げる */
-/* PV画面のペン=ガラス板方式（行がないので画面に固定・下で動画が動く） */
+/* PV画面のペン=行つきガラス板方式（インクは「そのとき歌っていた行」にひもづき、行が替わると引っこみ・巻き戻すと出てくる）。
+   svgはviewBox=1920×1080でcanvasと同じ座標系＝リサイズしても線が歌詞からずれない */
 .present-stage .ink-svg{height:100%}
 .present-stage.pen-active{outline:3px solid var(--penc,#ff5d5d);outline-offset:-3px}
 .present-stage.pen-active.pen-eraser{outline-style:dashed;outline-color:rgba(255,255,255,.6)}
@@ -544,14 +545,55 @@ table.lyrics tr:hover .row-tools{opacity:1}
   justify-content:center;max-width:92vw;background:rgba(20,22,34,.97);
   border:1px solid rgba(255,255,255,.16);box-shadow:0 6px 24px rgba(0,0,0,.5)}
 .read-tray .rt-line{font-size:14px;font-weight:800;color:var(--read);padding:0 6px;white-space:nowrap}
-.read-tray .rt-btn{height:40px;padding:0 14px;border-radius:999px;font-size:14px;font-weight:700;
+.read-tray .rt-btn,.rec-tray .rt-btn{height:40px;padding:0 14px;border-radius:999px;font-size:14px;font-weight:700;
   color:rgba(255,255,255,.9);background:rgba(255,255,255,.10);white-space:nowrap}
-.read-tray .rt-btn:hover{background:rgba(255,255,255,.22)}
+.read-tray .rt-btn:hover,.rec-tray .rt-btn:hover{background:rgba(255,255,255,.22)}
 .read-tray .rt-btn.on{background:var(--read);color:#06131f}
-.read-tray .rt-x{width:36px;height:40px;border-radius:10px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.7)}
-.read-tray .rt-x:hover{background:rgba(255,255,255,.2)}
+.read-tray .rt-x,.rec-tray .rt-x{width:36px;height:40px;border-radius:10px;background:rgba(255,255,255,.07);color:rgba(255,255,255,.7)}
+.read-tray .rt-x:hover,.rec-tray .rt-x:hover{background:rgba(255,255,255,.2)}
 .present-root.pen-on .read-tray{bottom:206px} /* ペンのトレイのぶん上げる */
 .present-btn.read-on{background:var(--read);color:#06131f}
+
+/* 🎙 れんしゅう録音（その場かぎり・どこにも保存しない）
+   ・録音の実体はメモリ上のBlobだけ。保存/送信ボタンはそもそも作らない
+   ・録音色=ローズ（よみ水色・穴あき橙・アクセント紫と取り違えない4色目） */
+.present-btn.rec-on{background:#e2506a;color:#fff}
+.rec-banner{position:absolute;top:14px;left:50%;transform:translateX(-50%);z-index:12;display:flex;align-items:center;gap:12px;
+  background:linear-gradient(135deg,#b23b55,#8e2f49);color:#fff;font-size:15px;font-weight:700;
+  border-radius:999px;padding:8px 12px 8px 18px;box-shadow:0 8px 28px rgba(0,0,0,.45);max-width:94vw;flex-wrap:wrap;justify-content:center}
+.rec-banner .rb-dot{width:12px;height:12px;border-radius:50%;background:rgba(255,255,255,.45);flex:none}
+.rec-banner .rb-dot.on{background:#ff4d5e;animation:recPulse 1s infinite}
+@keyframes recPulse{0%,100%{opacity:1}50%{opacity:.25}}
+.rec-banner .rb-main{height:38px;padding:0 18px;border-radius:999px;background:#fff;color:#8e2f49;font-weight:800;font-size:15px}
+.rec-banner .rb-main:disabled{opacity:.45}
+.rec-banner .rb-main:hover:not(:disabled){background:#ffe3e9}
+.rec-banner .rb-x{height:38px;padding:0 14px;border-radius:999px;background:rgba(0,0,0,.25);color:#fff;font-weight:700}
+.rec-banner .rb-x:hover{background:rgba(0,0,0,.45)}
+.sheet-row.rec-sel{background:rgba(226,80,106,.13);box-shadow:inset 4px 0 0 #e2506a}
+.sheet-row.rec-live{background:rgba(226,80,106,.22);box-shadow:inset 4px 0 0 #ff4d5e}
+.rec-tray{position:absolute;left:50%;transform:translateX(-50%);bottom:150px;z-index:11;
+  display:flex;align-items:center;gap:8px;padding:10px 14px;border-radius:16px;flex-wrap:wrap;
+  justify-content:center;max-width:94vw;background:rgba(30,17,22,.97);
+  border:1px solid rgba(226,80,106,.5);box-shadow:0 10px 34px rgba(0,0,0,.5)}
+.rec-tray .rt-btn.on{background:#e2506a;color:#fff}
+.rec-tray .rec-note{flex-basis:100%;text-align:center;font-size:12px;font-weight:600;color:rgba(255,255,255,.55)}
+.rec-notice{position:absolute;inset:0;z-index:60;background:rgba(0,0,0,.74);display:flex;align-items:center;justify-content:center;padding:20px}
+.rec-notice-card{background:var(--bg-panel);border:1px solid var(--border);border-radius:16px;max-width:600px;padding:26px 30px;font-size:16px}
+.rec-notice-card .rn-mic{font-size:36px;text-align:center}
+.rec-notice-card .rn-head{font-weight:800;font-size:18px;margin:4px 0 12px;text-align:center}
+.rec-notice-card .rn-item{padding:6px 0 6px 14px;border-left:4px solid #e2506a;margin:10px 0;line-height:1.9}
+.rec-notice-card .rn-btns{display:flex;gap:10px;margin-top:20px;justify-content:center;flex-wrap:wrap}
+.rec-notice-card .rn-go{height:50px;padding:0 26px;border-radius:12px;background:#e2506a;color:#fff;font-weight:800;font-size:16px}
+.rec-notice-card .rn-go:hover{background:#c9435c}
+.rec-notice-card .rn-no{height:50px;padding:0 18px;border-radius:12px;background:rgba(255,255,255,.08);color:#b8bdc9}
+.rec-notice-card .rn-no:hover{background:rgba(255,255,255,.18)}
+.rec-notice-card .rn-passrow{display:flex;gap:8px;margin-top:16px}
+.rec-notice-card .rn-pass{flex:1;min-width:0;height:50px;border-radius:12px;border:1px solid var(--border);background:rgba(255,255,255,.06);color:#fff;font-size:18px;padding:0 14px;text-align:center;letter-spacing:1px}
+.rec-notice-card .rn-pass:focus{outline:2px solid #e2506a;border-color:transparent}
+.rec-notice-card .rn-show{height:50px;padding:0 14px;border-radius:12px;background:rgba(255,255,255,.08);color:#b8bdc9;font-size:13px;white-space:nowrap}
+.rec-notice-card .rn-show:hover{background:rgba(255,255,255,.18)}
+.rec-notice-card .rn-bad{color:#ff8c9e;text-align:center;margin-top:10px;font-weight:700}
+.rec-notice-card .rn-sub{color:#8b93a5;font-size:13px;text-align:center;margin-top:10px}
 .pv-read-card{position:absolute;left:50%;top:42%;transform:translate(-50%,-50%);z-index:8;
   max-width:min(1100px,88vw);padding:24px 38px;text-align:center;pointer-events:none;
   background:rgba(10,12,20,.8);border:2px solid var(--read);border-radius:18px}
@@ -569,7 +611,7 @@ table.lyrics tr:hover .row-tools{opacity:1}
 .pv-annot2{position:absolute;z-index:6;pointer-events:none;transition:opacity .25s ease-in}
 .pv-annot2.out{opacity:0}
 .pv-annot2 .an-underline{position:absolute;height:var(--an-h,3px);border-radius:var(--an-r,2px);background:var(--an-ac);
-  transform-origin:left;animation:anLine .35s cubic-bezier(.22,1,.36,1) .15s backwards} /* すっと引かれる */
+  transform-origin:left;animation:anLine .35s cubic-bezier(.22,1,.36,1) 0s backwards} /* すっと引かれる（遅延なし=先行表示と合わせて早めに）*/
 .pv-annot2 .an-gloss{position:absolute;white-space:nowrap;line-height:1.35;
   color:var(--an-fg);background:var(--an-bg,transparent);border-radius:8px;padding:.08em .5em;
   animation:anGloss .3s ease-out .32s backwards}                                        /* 一呼吸おいてふわっと */
@@ -589,7 +631,7 @@ table.lyrics tr:hover .row-tools{opacity:1}
 .pv-annot2.preset-classroom .an-gloss,.pv-annot2.preset-classroom .an-point{background:var(--an-bg);
   border:1px solid rgba(37,99,235,.28);box-shadow:0 2px 8px rgba(15,23,42,.12)}
 .pv-annot2.preset-neon{--an-ac:#00E5FF;--an-fg:#D9FBFF;--an-pt:#9AA3B8}
-.pv-annot2.preset-neon .an-underline{box-shadow:0 0 8px rgba(0,229,255,.55);animation:anLine .22s cubic-bezier(.22,1,.36,1) .15s backwards,anNeon .35s ease-out .37s backwards}
+.pv-annot2.preset-neon .an-underline{box-shadow:0 0 8px rgba(0,229,255,.55);animation:anLine .22s cubic-bezier(.22,1,.36,1) 0s backwards,anNeon .35s ease-out .22s backwards}
 .pv-annot2.preset-neon .an-gloss{text-shadow:0 0 10px rgba(0,229,255,.35),0 1px 4px rgba(0,0,0,.7)}
 @keyframes anNeon{from{box-shadow:0 0 16px rgba(0,229,255,.95)}to{box-shadow:0 0 8px rgba(0,229,255,.55)}}
 .pv-annot2.preset-bold{--an-ac:#FFC531;--an-h:6px;--an-r:1px;--an-fg:#111418;--an-pt:#8E97A8;--an-bg:#FFC531}
@@ -1109,6 +1151,11 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   /* ============================================================
      [2] 定数・スタイルプリセット定義
      ============================================================ */
+  // 日本語入力（IME）の「変換確定」のEnter/Escapeを、入力枠の確定・キャンセルと区別する。
+  // 変換中のキーは isComposing=true（Chrome系は keyCode 229）＝枠側は反応しない。
+  // これが無いと、変換を確定しただけで枠が閉じてしまい日本語が入力できない
+  const imeKey = (e) => !!((e.nativeEvent || e).isComposing) || e.keyCode === 229;
+
   const APP_KEY = "lyric-pv:autosave:v1";
   const FLAG_KEY = "lyric-pv:flags:v1";
   const PUB_BASE_KEY = "lyric-pv:pubBase:v1";       // 📲 iPad配布: 配布先URL（一度だけ設定）
@@ -1380,7 +1427,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       l.point = typeof l.point === "string" ? l.point.slice(0, 60) : "";
       l.notes = Array.isArray(l.notes)
         ? reanchorNotes(
-            l.notes.filter((nt) => nt && typeof nt.w === "string" && typeof nt.text === "string" && nt.text)
+            l.notes.filter((nt) => nt && typeof nt.w === "string" && typeof nt.text === "string") // text空=線だけの注釈として有効
               .map((nt) => ({ ...nt, text: nt.text.slice(0, 20) })), toks)
         : [];
     });
@@ -1393,6 +1440,18 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     p.pub = Object.assign({ note: "", slug: "" }, json.pub || {});
     p.pub.note = typeof p.pub.note === "string" ? p.pub.note.slice(0, 100) : "";
     p.pub.slug = typeof p.pub.slug === "string" ? p.pub.slug : "";
+    // 💾 PVペンの保存書き込み {行id: [{tool,color,pts}]}: 形が崩れたもの・消えた行のぶんは捨てる（undo/redoもここを通る）
+    if (p.pvInk && typeof p.pvInk === "object" && !Array.isArray(p.pvInk)) {
+      const out = {};
+      for (const k of Object.keys(p.pvInk)) {
+        const arr = (Array.isArray(p.pvInk[k]) ? p.pvInk[k] : []).filter((s) =>
+          s && Array.isArray(s.pts) && s.pts.length >= 4 && s.pts.length % 2 === 0 && s.pts.every((n) => Number.isFinite(n)));
+        if (arr.length && p.lines.some((l) => l.id === k))
+          out[k] = arr.map((s) => ({ tool: s.tool === "hl" ? "hl" : "pen",
+            color: PEN_COLOR_ORDER.includes(s.color) ? s.color : "red", pts: s.pts.map((n) => Math.round(n)) }));
+      }
+      if (Object.keys(out).length) p.pvInk = out; else delete p.pvInk;
+    } else delete p.pvInk;
     return p;
   }
 
@@ -3745,7 +3804,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
                     style=${{ width: "72px", padding: "1px 4px", fontSize: "12px" }}
                     onChange=${(e) => setEditVal(e.target.value)}
                     onClick=${(e) => e.stopPropagation()}
-                    onKeyDown=${(e) => { if (e.key === "Enter") commitEdit(l); if (e.key === "Escape") setEditingId(null); e.stopPropagation(); }}
+                    onKeyDown=${(e) => { e.stopPropagation(); if (imeKey(e)) return; if (e.key === "Enter") commitEdit(l); if (e.key === "Escape") setEditingId(null); }}
                     onBlur=${() => commitEdit(l)} />`
                 : html`<span className=${"lr-time tnum" + (l.tStart == null ? " unsync" : "")}
                     title="クリックで時刻を直接編集"
@@ -3857,15 +3916,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         np.lines.splice(j, 0, row);
       });
     };
-    // 💡語義の登録/変更/削除（text空=削除）。範囲wi..we（フレーズ可）・交差する既存チップは置き換え。
+    // 💡語義の登録/変更/削除（text=null で削除・空文字=下線だけ）。範囲wi..we（フレーズ可）・交差する既存チップは置き換え。
     // wi昇順で保存し、外れた語義(wi:-1)は末尾へ
     const setGloss = (lineId, wi, we, w, text) => {
       onCommit((np) => {
         const l = np.lines.find((x) => x.id === lineId);
         if (!l) return;
         l.notes = (l.notes || []).filter((nt) => nt.wi < 0 || (nt.we ?? nt.wi) < wi || nt.wi > we);
-        const t = (text || "").trim();
-        if (t) l.notes.push({ wi, we, w, text: t.slice(0, 20) });
+        if (text != null) l.notes.push({ wi, we, w, text: (text || "").trim().slice(0, 20) });
         l.notes.sort((a, b) => (a.wi < 0 ? 999 : a.wi) - (b.wi < 0 ? 999 : b.wi));
       }, { coalesce: true });
     };
@@ -3980,9 +4038,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
                                 const gwe = g.we ?? g.wi;
                                 out.push(html`<button key=${i} className="ae-tok has" title="タップで意味を書きかえ"
                                   onClick=${() => tapTok(i)}>
-                                  <b>${g.w}</b> ─ ${g.text}
-                                  <span className="x" title="この語義を消す"
-                                    onClick=${(e) => { e.stopPropagation(); setGloss(l.id, g.wi, gwe, g.w, ""); if (ge && ge.wi === g.wi) setGlossEdit(null); }}>✕</span>
+                                  <b>${g.w}</b>${g.text ? " ─ " + g.text : " （線だけ）"}
+                                  <span className="x" title="この注釈を消す"
+                                    onClick=${(e) => { e.stopPropagation(); setGloss(l.id, g.wi, gwe, g.w, null); if (ge && ge.wi === g.wi) setGlossEdit(null); }}>✕</span>
                                 </button>`);
                                 i = gwe; continue;
                               }
@@ -3998,7 +4056,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
                           })()}
                           ${nts.filter((nt) => nt.wi < 0).map((nt, i) => html`<span key=${"o" + i} className="ae-tok has"
                             title="英語を書きかえたため、この単語が見つかりません（行の注釈として表示されます）">
-                            ⚠ <b>${nt.w}</b> ─ ${nt.text}
+                            ⚠ <b>${nt.w}</b>${nt.text ? " ─ " + nt.text : " （線だけ）"}
                             <span className="x" title="この語義を消す" onClick=${() => removeOrphan(l.id, nt)}>✕</span>
                           </span>`)}
                         </div>
@@ -4008,11 +4066,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
                             placeholder="例: 進行形（〜しているところ）"
                             onChange=${(e) => setGlossEdit({ ...ge, val: e.target.value })}
                             onKeyDown=${(e) => {
+                              if (e.key === "Escape") e.stopPropagation();
+                              if (imeKey(e)) return; // 日本語の変換確定では閉じない（もう一度Enterで確定）
                               if (e.key === "Enter") { setGloss(l.id, ge.wi, ge.we, ge.w, ge.val); setGlossEdit(null); }
-                              if (e.key === "Escape") { e.stopPropagation(); setGlossEdit(null); }
+                              if (e.key === "Escape") setGlossEdit(null);
                             }} />
                           <button className="btn btn-primary btn-sm" onClick=${() => { setGloss(l.id, ge.wi, ge.we, ge.w, ge.val); setGlossEdit(null); }}>
-                            ${nts.some((nt) => nt.wi === ge.wi && (nt.we ?? nt.wi) === ge.we) ? "変更" : "追加"}</button>
+                            ${nts.some((nt) => nt.wi === ge.wi && (nt.we ?? nt.wi) === ge.we) ? "変更" : (ge.val || "").trim() ? "追加" : "線だけ追加"}</button>
                           <button className="btn btn-secondary btn-sm" onClick=${() => setGlossEdit(null)}>やめる</button>
                         </div>`}
                         <div className="ae-point-row">
@@ -4021,7 +4081,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
                             placeholder="例: have to 〜 = 〜しなければならない"
                             onChange=${(e) => update(l.id, "point", e.target.value)} />
                         </div>
-                        <div className="ae-hint">となりの語をタップすると「is calling」のようなフレーズにまとめられます。英語の歌詞を書きかえて語が変わると語義は外れます（⚠つきで残ります）</div>
+                        <div className="ae-hint">となりの語をタップすると「is calling」のようなフレーズにまとめられます。意味を空のまま追加すると<b>下線だけ</b>引けます（消すときはチップの✕）。英語の歌詞を書きかえて語が変わると語義は外れます（⚠つきで残ります）</div>
                       </div></td>
                     </tr>`];
                   })}
@@ -4582,7 +4642,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         ${phase === "done" && result && html`
           <div className="export-progress" style=${{ borderColor: "rgba(61,220,151,.4)", alignItems: "stretch" }}>
             <div style=${{ fontSize: "14px", fontWeight: 700, color: "var(--success)" }}>✓ 曲パックを書き出しました　${result.fname}（${(result.size / 1048576).toFixed(1)} MB）</div>
-            <div className="dc-sub">のこりの手順: ① ${result.fname} を公開フォルダ（singsync-site）の「songs」に入れる → ② GitHub Desktopで Commit → Push → ③ 2〜3分待つと下のQRで開けます（Pushの前に読むと「曲が見つかりません」になります）</div>
+            <div className="dc-sub">のこりの手順: ① ${result.fname} を<b>GitHub Desktopのリポジトリ</b>の「songs」フォルダに入れる（メニュー Repository → Show in Finder で開けます。Desktopのsingsync-siteは原本置き場＝入れてもPushされません）→ ② GitHub Desktopで Commit → Push → ③ 2〜3分待つと下のQRで開けます（Pushの前に読むと「曲が見つかりません」になります）</div>
             ${result.url ? html`
               <div className="qr-panel">
                 <canvas ref=${qrRef} className="qr-canvas"></canvas>
@@ -4908,7 +4968,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
               <b>Q. 単語をかくして聞き取り練習をしたい（穴あきリスニング）</b><br/>→ 歌詞シートの「⬚ 穴あき」（K）で、えらんだ単語が下線だけの空欄になります。おまかせ（すこし/ふつう/たっぷり）で自動でかくす／「✎ 単語をえらぶ」でタップして自分でえらぶ、の両方OK。授業では穴をタップすると1語ずつひらき（ひらいた単語はもう一度タップで発音）、左下の「🔓 全部あける」（A）で一気に答え合わせできます。かくす場所はこの曲と一緒に保存されるので、前の日に仕込んでおけば当日はボタンひとつです。<br/>
               <b>Q. 発音を確認したい（歌ではなく、ふつうの読み方で聞かせたい）</b><br/>→ 歌詞シートの各行の「🔈」を押すと、曲が止まって その行をふつうの発音で読み上げます（和訳が出ていても英文だけ読みます）。下に出るトレイから「🐢 ゆっくりもう一回」（0.75の速さ）・「🎵 うた⇔よみ」（よんだあと同じ行を歌でくらべる）・「🔁 よみリピート」（よむ→こえに出す間→もう一回）が使えます。PV画面でも「🔈 よみ」（R・Shift+R=ゆっくり）でいまの行を読めます。読んでいる単語は水色に光ります（単語の切れ目を教えてくれない声のときは、経過時間から推定して光らせます）。<b>読み終わってもトレイとカードは出したまま</b>なので、何回でも聞き直せます（PV画面はカードの外＝画面をタップ、またはトレイの✕・Escで閉じます）。読み終わっても曲は止まったままなので、▶（スペース）で再開してください。声は「🗣 声」でえらんだものと共通です。穴あき中は、穴がのこっている行は読めません（音で答えがばれるため）。<br/>
               <b>Q. 単語の意味や文法メモを歌詞にそえたい（注釈）</b><br/>→ ②歌詞で行の「💡」を押すと仕込めます。単語をタップして意味を入力（となりの語をタップすると「is calling」のようなフレーズにもできます）。行に1つの「一言ポイント」も書けます。授業モードでは、その語の下に細い色の線が引かれ、すぐ下に意味がそっと出ます。色や書体はえらんだスタイル（Aurora・Acousticなど）の雰囲気に合わせて変わります。下がせまい画面（デュエットの下の段など）では、同じ場所の上がわに出ます。Gキーか「💡 注釈」ボタンで だす/かくす。歌詞シートでは いまの行の下に金色のチップで出ます。動画（MP4）には入りません。穴あき中は、穴がのこっている行の注釈はかくれたままです（答えのヒントになるため。全部あけると出てきます）。<br/>
-              <b>Q. 歌詞に丸や線を書きこみたい（ペン）</b><br/>→ 授業モードの「✎ かきこみ」（P）でペンモードになります。歌詞シートでは書きこみが行にはりつき、スクロールしてもずれません（1本ゆびで書く・2本ゆびでスクロール）。PV画面ではガラス板のように画面に直接かけます。道具は ✎ペン／🖍マーカー（すけて見える）／🧽けしゴム（線をなぞると まるごと消える）、色は赤・黄・水色（D=道具 C=色 Z=1つもどす）。書きこみは黒板と同じ「その場かぎり」で保存されず、文字サイズなど画面の並びが変わる操作をすると自動で消えます（理由も表示されます）。<br/>
+              <b>Q. 歌詞に丸や線を書きこみたい（ペン）</b><br/>→ 授業モードの「✎ かきこみ」（P）でペンモードになります。歌詞シートでは書きこみが行にはりつき、スクロールしてもずれません（1本ゆびで書く・2本ゆびでスクロール）。PV画面ではガラス板のように画面に直接かけますが、書いたものは<b>そのとき歌っていた行とセット</b>でおぼえられます＝次の行に進むと画面から引っこみ、巻き戻すとまた出てきます（2段こうごでは書いた高さで上下どちらの行かが決まります。↩と🗑は いま見えている行のぶんに効きます）。道具は ✎ペン／🖍マーカー（すけて見える）／🧽けしゴム（線をなぞると まるごと消える）、色は赤・黄・水色（D=道具 C=色 Z=1つもどす）。書きこみはふだんは黒板と同じ「その場かぎり」で、授業モードを出ると消えます。のこしたいときは、PV画面のペントレイの<b>「💾 とっておく」</b>＝ぜんぶの行の書き込みをこの曲に保存できます（次にひらいたときも同じ行に出てきます・曲パックにも入ります。保存から消したいときは、けしゴムや🗑で消してから もう一度💾）。歌詞シートの書きこみは保存できず、文字サイズなど画面の並びが変わる操作をすると自動で消えます（理由も表示されます）。<br/>
               <b>Q. 1つの単語だけ長く伸びる歌い方に合わせたい</b><br/>→ ③同期の波形で行を選び、単語の縦線をドラッグしてください。<br/>
               <b>Q. 背景に写真や動画を使いたい</b><br/>→ ④デザインの「背景」で追加できます。2枚目からは「どの行から表示するか」を選べます（2番の頭や間奏明けで切り替えるのがおすすめ）。Canva素材の流用はライセンス上NGなので、PexelsやPixabayなどのフリー素材をどうぞ。<br/>
               <b>Q. 開き直すたびにファイルを選ぶのが面倒</b><br/>→ 曲と背景はブラウザ内に自動でキャッシュされます。ホームの「前回の続き」から開けば、選び直しは不要です（.lyricpvファイルから開いた場合も、同じ曲なら自動で読み込まれます）。<br/>
@@ -5209,140 +5269,226 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     return html`<svg ref=${svgRef} className="ink-svg" height="0"></svg>`;
   });
 
-  /* PV画面用インク層=ガラス板方式。行アンカーなし・画面座標に固定（下で動画が動き続ける）。
-     スクロールがないので2本指パンもなし。画面サイズが変わったら消す（ずれた線は誤情報） */
-  const PvInkLayer = React.memo(function PvInkLayer({ inkRef, penStRef, inkApiRef, onNotify }) {
+  /* PV画面用インク層=行つきガラス板方式。書き込みは「そのとき歌っている行」にひもづけて覚え、
+     行が進むと画面から引っこみ・巻き戻すとまた出てくる（行ごとの黒板を差し替えるイメージ）。
+     座標はcanvasと同じ1920×1080（viewBox）＝画面サイズが変わっても線が歌詞からずれない。
+     2段交互（duet）は書きはじめの高さで上下どちらの行かを決める。保存はしない（授業モードを出ると消える） */
+  const PV_PEN_W = 6, PV_HL_W = 33, PV_ERASE_R = 24; // canvas座標系（1920幅）の太さ。画面上はシートのペンとほぼ同じ見た目
+  // 💾 保存形 {行id:[{tool,color,pts}]} ⇔ インク実体（バケツ）の相互変換。座標はcanvas系の整数・太さは道具から復元
+  function pvInkLoad(p) { // 授業モードに入るたび、この曲に保存された書き込みを行のバケツへ復元
+    const ink = { buckets: {}, seq: 0, opSeq: 0 };
+    for (const k of Object.keys(p.pvInk || {})) {
+      const strokes = [];
+      for (const sv of p.pvInk[k]) {
+        const s = { id: ++ink.seq, key: k, tool: sv.tool, color: sv.color, w: sv.tool === "hl" ? PV_HL_W : PV_PEN_W,
+                    pts: sv.pts.slice(), bx0: 1e9, by0: 1e9, bx1: -1e9, by1: -1e9, el: null };
+        for (let i = 0; i < s.pts.length; i += 2) {
+          const x = s.pts[i], y = s.pts[i + 1];
+          if (x < s.bx0) s.bx0 = x; if (x > s.bx1) s.bx1 = x;
+          if (y < s.by0) s.by0 = y; if (y > s.by1) s.by1 = y;
+        }
+        s.el = penBuildEl(s);
+        strokes.push(s);
+      }
+      if (strokes.length) ink.buckets[k] = { strokes, ops: [] };
+    }
+    return ink;
+  }
+  const pvInkSave = (buckets, p) => { // 実在する行のストロークだけを保存形へ
+    const out = {};
+    for (const k of Object.keys(buckets)) {
+      const b = buckets[k];
+      if (!b || !b.strokes.length || !p.lines.some((l) => l.id === k)) continue;
+      out[k] = b.strokes.map((s) => ({ tool: s.tool, color: s.color, pts: s.pts.map((n) => Math.round(n)) }));
+    }
+    return out;
+  };
+  const PvInkLayer = React.memo(function PvInkLayer({ inkRef, penStRef, inkApiRef, projRef, ov2Ref }) {
     const svgRef = useRef(null);
     useEffect(() => {
       const svg = svgRef.current;
-      const stage = svg.parentElement; // .present-stage（inset:0で不動）
-      const ink = inkRef.current;
-      // 再マウント時（Jでシート⇔PV往復）: 画面サイズが変わっていたら復元せず捨てる
-      const sz = [stage.clientWidth, stage.clientHeight];
-      if (ink.size && (Math.abs(ink.size[0] - sz[0]) > 1 || Math.abs(ink.size[1] - sz[1]) > 1)) { ink.strokes = []; ink.ops = []; }
-      ink.size = sz;
-      for (const s of ink.strokes) svg.appendChild(s.el); // 復元
+      const ink = inkRef.current; // { buckets: {行id: {strokes, ops}}, seq, opSeq }
+      const bucket = (k) => ink.buckets[k] || (ink.buckets[k] = { strokes: [], ops: [] });
 
-      const ro = new ResizeObserver(() => {
-        const w = stage.clientWidth, h = stage.clientHeight;
-        if (Math.abs(w - ink.size[0]) > 1 || Math.abs(h - ink.size[1]) > 1) {
-          ink.size = [w, h];
-          if (ink.strokes.length) { api.clearAll(false); onNotify("layout-cleared"); }
+      // いまの行/次の行（PvAnnot・renderDuetと同じ判定）
+      const linePair = () => {
+        const p = projRef.current, t = AE.t();
+        let cur = null, nxt = null;
+        for (const l of p.lines) {
+          if (l.type !== "lyric" || l.tStart == null) continue;
+          if (l.tStart <= t + 0.01) cur = l; else { nxt = l; break; }
         }
-      });
-      ro.observe(stage);
+        return { p, t, cur, nxt, mode: (ov2Ref.current || {}).nextPreview || "single" };
+      };
+      // 画面に出しておくバケツ。duet=見えている2行ぶん／それ以外=歌っている行
+      //（次の行の文字が飛びこみ始めたら次の行へバトンタッチ＝古いインクが新しい歌詞に重ならない）
+      const visKeys = () => {
+        const { p, t, cur, nxt, mode } = linePair();
+        if (mode === "duet") {
+          const ks = [cur, nxt].filter(Boolean).map((l) => l.id);
+          return ks.length ? ks : ["__free"];
+        }
+        const preset = PRESETS[p.style.presetId] || PRESETS.aurora;
+        const a = nxt && t >= nxt.tStart - preset.entrance.dur ? nxt : cur || nxt;
+        return [a ? a.id : "__free"];
+      };
+      // 新しい線のあて先。duetは書きはじめの高さ（canvas y）で上下段の行を選ぶ
+      const bindKey = (cy) => {
+        const { p, cur, nxt, mode } = linePair();
+        if (mode === "duet" && (cur || nxt)) {
+          const tl = lyricTimeline(p);
+          const slotOf = (l) => { const e = tl.find((x) => x.line.id === l.id); return e ? e.slot : 0; };
+          const wantTop = cy < (DUET_TOP + DUET_BOT) / 2;
+          const pick = [cur, nxt].filter(Boolean).find((l) => (slotOf(l) === 0) === wantTop);
+          return (pick || cur || nxt).id;
+        }
+        return visKeys()[0];
+      };
 
-      let cur = null;     // 描画中 { s, rect, raf, dirty, pid }
-      let erasing = null; // けしゴム中 { op, rect, pid }
+      // 表示の同期: 見えている行のストロークだけをSVGに載せる（書いている最中はいじらない）
+      let drw = null;     // 描画中 { s, rect, raf, dirty, pid }
+      let erasing = null; // けしゴム中 { got: {行id: [strokes]}, rect, pid }
+      let shown = null;
+      const sync = () => {
+        if (drw || erasing) return;
+        const ks = visKeys(), sig = ks.join("|");
+        if (sig === shown) return;
+        shown = sig;
+        while (svg.firstChild) svg.firstChild.remove();
+        for (const k of ks) if (ink.buckets[k]) for (const s of ink.buckets[k].strokes) svg.appendChild(s.el);
+      };
+      sync();
+      const iv = setInterval(sync, 150); // 親tick(250ms)と独立。行替わり・シークに150ms以内で追従
+
+      // ポインタ座標→canvas座標（viewBox="0 0 1920 1080" の xMidYMid meet と同じ式）
+      const toCv = (rect, px, py) => {
+        const sc = Math.min(rect.width / CANVAS_W, rect.height / CANVAS_H) || 1;
+        return [(px - rect.left - (rect.width - CANVAS_W * sc) / 2) / sc,
+                (py - rect.top - (rect.height - CANVAS_H * sc) / 2) / sc];
+      };
       const addPt = (e) => {
-        const { s, rect } = cur;
+        const { s, rect } = drw;
         let evs = e.getCoalescedEvents ? e.getCoalescedEvents() : [];
         if (!evs.length) evs = [e];
         for (const ev of evs) {
-          const x = ev.clientX - rect.left, y = ev.clientY - rect.top;
+          const [x, y] = toCv(rect, ev.clientX, ev.clientY);
           const n = s.pts.length;
-          if (n >= 2 && (x - s.pts[n - 2]) ** 2 + (y - s.pts[n - 1]) ** 2 < 4) continue;
+          if (n >= 2 && (x - s.pts[n - 2]) ** 2 + (y - s.pts[n - 1]) ** 2 < 9) continue;
           s.pts.push(x, y);
           if (x < s.bx0) s.bx0 = x; if (x > s.bx1) s.bx1 = x;
           if (y < s.by0) s.by0 = y; if (y > s.by1) s.by1 = y;
         }
-        cur.dirty = true;
-        if (!cur.raf) cur.raf = requestAnimationFrame(() => {
-          if (!cur) return;
-          cur.raf = 0;
-          if (cur.dirty) { cur.dirty = false; cur.s.el.setAttribute("d", penPathD(cur.s.pts)); }
+        drw.dirty = true;
+        if (!drw.raf) drw.raf = requestAnimationFrame(() => {
+          if (!drw) return;
+          drw.raf = 0;
+          if (drw.dirty) { drw.dirty = false; drw.s.el.setAttribute("d", penPathD(drw.s.pts)); }
         });
       };
       const eraseAt = (e) => {
-        const x = e.clientX - erasing.rect.left, y = e.clientY - erasing.rect.top;
-        for (const s of ink.strokes.slice()) {
-          const thr = s.w / 2 + ERASE_R;
-          if (x < s.bx0 - thr || x > s.bx1 + thr || y < s.by0 - thr || y > s.by1 + thr) continue;
-          if (!penHitPts(s.pts, x, y, thr)) continue;
-          s.el.remove();
-          ink.strokes.splice(ink.strokes.indexOf(s), 1);
-          erasing.op.ss.push(s);
+        const [x, y] = toCv(erasing.rect, e.clientX, e.clientY);
+        for (const k of visKeys()) {
+          const b = ink.buckets[k];
+          if (!b) continue;
+          for (const s of b.strokes.slice()) {
+            const thr = s.w / 2 + PV_ERASE_R;
+            if (x < s.bx0 - thr || x > s.bx1 + thr || y < s.by0 - thr || y > s.by1 + thr) continue;
+            if (!penHitPts(s.pts, x, y, thr)) continue;
+            s.el.remove();
+            b.strokes.splice(b.strokes.indexOf(s), 1);
+            (erasing.got[k] || (erasing.got[k] = [])).push(s);
+          }
         }
       };
       const down = (e) => {
         if (!penStRef.current.on) return;
         if (e.button != null && e.button !== 0) return;
-        if (cur || erasing) return; // 2本目の指は無視（パーム対策）
+        if (drw || erasing) return; // 2本目の指は無視（パーム対策）
         e.preventDefault();
         try { svg.setPointerCapture(e.pointerId); } catch (e2) {}
-        const rect = stage.getBoundingClientRect();
+        const rect = svg.getBoundingClientRect();
         const st = penStRef.current;
-        if (st.tool === "eraser") { erasing = { op: { type: "erase", ss: [] }, rect, pid: e.pointerId }; eraseAt(e); return; }
-        const s = { id: ++ink.seq, tool: st.tool, color: st.color, w: st.tool === "hl" ? HL_W : PEN_W,
+        if (st.tool === "eraser") { erasing = { got: {}, rect, pid: e.pointerId }; eraseAt(e); return; }
+        const cy = toCv(rect, e.clientX, e.clientY)[1];
+        const s = { id: ++ink.seq, key: bindKey(cy), tool: st.tool, color: st.color, w: st.tool === "hl" ? PV_HL_W : PV_PEN_W,
                     pts: [], bx0: 1e9, by0: 1e9, bx1: -1e9, by1: -1e9, el: null };
         s.el = penBuildEl(s);
         svg.appendChild(s.el);
-        cur = { s, rect, raf: 0, dirty: false, pid: e.pointerId };
+        drw = { s, rect, raf: 0, dirty: false, pid: e.pointerId };
         addPt(e);
       };
       const move = (e) => {
         if (erasing && e.pointerId === erasing.pid) { eraseAt(e); return; }
-        if (cur && e.pointerId === cur.pid) addPt(e);
+        if (drw && e.pointerId === drw.pid) addPt(e);
       };
       const up = (e) => {
         if (erasing && e.pointerId === erasing.pid) {
-          if (erasing.op.ss.length) ink.ops.push(erasing.op);
+          for (const k in erasing.got) bucket(k).ops.push({ seq: ++ink.opSeq, type: "erase", ss: erasing.got[k] });
           erasing = null;
           return;
         }
-        if (!cur || e.pointerId !== cur.pid) return;
-        cancelAnimationFrame(cur.raf);
-        const s = cur.s; cur = null;
+        if (!drw || e.pointerId !== drw.pid) return;
+        cancelAnimationFrame(drw.raf);
+        const s = drw.s; drw = null;
         if (s.pts.length < 4) { // タップ=点として残す
           const x = s.pts[0] || 0, y = s.pts[1] || 0;
           s.pts = [x, y, x + 0.1, y + 0.1];
           s.bx0 = x; s.bx1 = x + 0.1; s.by0 = y; s.by1 = y + 0.1;
         }
         s.el.setAttribute("d", penPathD(s.pts));
-        ink.strokes.push(s);
-        ink.ops.push({ type: "draw", s });
+        const b = bucket(s.key);
+        b.strokes.push(s);
+        b.ops.push({ seq: ++ink.opSeq, type: "draw", s });
       };
       svg.addEventListener("pointerdown", down);
       svg.addEventListener("pointermove", move);
       svg.addEventListener("pointerup", up);
       svg.addEventListener("pointercancel", up);
 
-      const api = {
-        hasInk: () => ink.strokes.length > 0,
+      const api = { // ↩🗑は「いま見えている行のぶん」に効く（ほかの行の書き込みはそのまま残る）
+        hasInk: () => visKeys().some((k) => ink.buckets[k] && ink.buckets[k].strokes.length > 0),
         undo() {
-          const op = ink.ops.pop();
-          if (!op) return false;
+          let bb = null; // 見えている行のうち、いちばん新しい操作を持つバケツ
+          for (const k of visKeys()) {
+            const b = ink.buckets[k];
+            if (b && b.ops.length && (!bb || b.ops[b.ops.length - 1].seq > bb.ops[bb.ops.length - 1].seq)) bb = b;
+          }
+          if (!bb) return false;
+          const op = bb.ops.pop();
           if (op.type === "draw") {
             op.s.el.remove();
-            const i = ink.strokes.indexOf(op.s);
-            if (i >= 0) ink.strokes.splice(i, 1);
+            const i = bb.strokes.indexOf(op.s);
+            if (i >= 0) bb.strokes.splice(i, 1);
           } else {
-            for (const s of op.ss) { ink.strokes.push(s); svg.appendChild(s.el); }
+            for (const s of op.ss) { bb.strokes.push(s); svg.appendChild(s.el); }
           }
           return true;
         },
         clearAll(recordOp) {
-          if (!ink.strokes.length) return;
-          if (recordOp) ink.ops.push({ type: "clear", ss: ink.strokes.slice() });
-          else ink.ops = [];
-          for (const s of ink.strokes) s.el.remove();
-          ink.strokes = [];
+          for (const k of visKeys()) {
+            const b = ink.buckets[k];
+            if (!b || !b.strokes.length) continue;
+            if (recordOp) b.ops.push({ seq: ++ink.opSeq, type: "clear", ss: b.strokes.slice() });
+            else b.ops = [];
+            for (const s of b.strokes) s.el.remove();
+            b.strokes = [];
+          }
         },
       };
       inkApiRef.current = api;
 
       return () => {
-        ro.disconnect();
+        clearInterval(iv);
         svg.removeEventListener("pointerdown", down);
         svg.removeEventListener("pointermove", move);
         svg.removeEventListener("pointerup", up);
         svg.removeEventListener("pointercancel", up);
-        if (cur) cancelAnimationFrame(cur.raf);
+        if (drw) cancelAnimationFrame(drw.raf);
         inkApiRef.current = null;
       };
     }, []);
     // click素通しだと下の.present-stageのonClick=再生トグルが発火するため止める
-    return html`<svg ref=${svgRef} className="ink-svg" onClick=${(e) => e.stopPropagation()}></svg>`;
+    return html`<svg ref=${svgRef} className="ink-svg" viewBox=${"0 0 " + CANVAS_W + " " + CANVAS_H} onClick=${(e) => e.stopPropagation()}></svg>`;
   });
 
   /* 🔈 PV画面の「よみあげカード」。canvas（renderFrame）は書き出しと共用なので触らず、DOMオーバーレイで出す。
@@ -5391,6 +5537,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     acoustic:  { font: (px) => `500 ${px}px "Zen Maru Gothic", "Noto Sans JP", sans-serif` },
   };
   const ANNOT_LEAD = 0.9; // 歌い出しよりワンテンポ先にグロスを出す秒数（目が意味を拾ってから歌える）
+  const UNDERLINE_LEAD = 0.25; // 下線の先行秒数。着地アニメ終盤なので残りの動きは数px＝線が語を迎える見え方になる
   const PvAnnot = React.memo(function PvAnnot({ projRef, ov2Ref, canvasRef }) {
     const [, setTick] = useState(0);
     useEffect(() => { const iv = setInterval(() => setTick((n) => n + 1), 200); return () => clearInterval(iv); }, []);
@@ -5403,8 +5550,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (l.tStart <= t + 0.01) cur = l; else { nxt = l; break; }
     }
     const annotated = (l) => !!(l && ((l.notes || []).length || (l.point || "").trim()));
-    // 出: 歌い出しのワンテンポ前（ANNOT_LEAD）からグロスを予告表示。下線だけは着地（tStart）を待つ
-    //     ＝エントランス/リフト中の動く歌詞にはアンカーしない、は従来どおり守る
+    // 出: 歌い出しのワンテンポ前（ANNOT_LEAD）からグロスを予告表示。下線は着地の少し前（UNDERLINE_LEAD）から
+    //     ＝エントランス終盤は残りの動きが数pxなので、線が先に引かれても語とズレて見えない
     // 消: tEndでフェード開始＝歌詞の退場フェードと同時に消えきる（注釈だけ残さない）
     const show = annotated(cur) && t <= cur.tEnd ? cur
       : annotated(nxt) && t >= nxt.tStart - ANNOT_LEAD ? nxt : null;
@@ -5416,7 +5563,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const line = p.lines.find((l) => l.id === h.id); // 参照でなくidで毎回引く（onCommitの差し替えに強い）
     const canvas = canvasRef.current;
     if (!line || !canvas) return null;
-    const pre = t < line.tStart; // 予告中（歌詞はまだ着地前）＝下線はtStartで「すっ」と引かれる
+    const pre = t < line.tStart - UNDERLINE_LEAD; // 予告中＝下線は歌い出しの少し前から「すっ」と引かれる
     const rect = canvas.getBoundingClientRect(); // 毎tick実測＝リサイズ/全画面に追従。present-rootはfixed inset:0前提
     const s = rect.width / CANVAS_W;
     if (!s) return null;
@@ -5457,28 +5604,38 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       }
       measureCtx.font = as.font(glossPx);
       const a = segs[segs.length - 1];
-      return { key: idx, nt, segs, cx: (a.x1 + a.x2) / 2, w: measureCtx.measureText(nt.text).width + glossPx };
+      return { key: idx, nt, segs, row: lay.words[we].row, cx: (a.x1 + a.x2) / 2, w: measureCtx.measureText(nt.text).width + glossPx };
     });
 
+    // グロスの上下振り分け: 「/」で2段以上に折り返した行は、1段目の語=行の上／2段目以降の語=行の下。
+    // 1段の行は従来どおり全部下グループ（下に入らなければ上へ退避）
+    const multiRow = lay.rows.length > 1;
+    const labeled = items.filter((it) => it.nt.text); // text空＝下線だけはグロス無し（段の割り付けにも入れない）
+    labeled.forEach((it) => { it.top = multiRow && it.row === 0; });
+    const topItems = labeled.filter((it) => it.top), botItems = labeled.filter((it) => !it.top);
+
     // 横衝突: x昇順に詰め、アンカー中心から60canvas-px超ずれるなら2段目へ（最大2段・画面内クランプ）
-    const laneRight = [];
-    items.slice().sort((a, b) => a.cx - b.cx).forEach((it) => {
-      const want = it.cx - it.w / 2;
-      let x = Math.max(want, (laneRight[0] ?? -1e9) + 14);
-      if (x - want <= 60 && x + it.w <= CANVAS_W - 40) { it.lane = 0; it.x = Math.max(40, x); laneRight[0] = it.x + it.w; }
-      else {
-        x = Math.max(want, (laneRight[1] ?? -1e9) + 14);
-        it.lane = 1; it.x = Math.max(40, Math.min(x, CANVAS_W - 40 - it.w)); laneRight[1] = it.x + it.w;
-      }
-    });
-    const lanesN = items.length ? Math.max(...items.map((i) => i.lane)) + 1 : 0;
+    const packLanes = (arr) => {
+      const laneRight = [];
+      arr.slice().sort((a, b) => a.cx - b.cx).forEach((it) => {
+        const want = it.cx - it.w / 2;
+        let x = Math.max(want, (laneRight[0] ?? -1e9) + 14);
+        if (x - want <= 60 && x + it.w <= CANVAS_W - 40) { it.lane = 0; it.x = Math.max(40, x); laneRight[0] = it.x + it.w; }
+        else {
+          x = Math.max(want, (laneRight[1] ?? -1e9) + 14);
+          it.lane = 1; it.x = Math.max(40, Math.min(x, CANVAS_W - 40 - it.w)); laneRight[1] = it.x + it.w;
+        }
+      });
+      return arr.length ? Math.max(...arr.map((i) => i.lane)) + 1 : 0;
+    };
+    const topN = packLanes(topItems), botN = packLanes(botItems);
 
     // 一言ポイント＋⚠孤児（語アンカーなし）は帯の端に中央揃えで積む
     const pointPx = 24;
     measureCtx.font = as.font(pointPx);
     const ptItems = [];
     if ((line.point || "").trim()) ptItems.push("💡 " + line.point.trim());
-    orphans.forEach((nt) => ptItems.push("⚠ " + nt.w + " ─ " + nt.text));
+    orphans.forEach((nt) => ptItems.push("⚠ " + nt.w + (nt.text ? " ─ " + nt.text : "")));
     const ptWs = ptItems.map((tx) => measureCtx.measureText(tx).width);
 
     // 下の帯（歌詞ブロック=和訳込みの下）に収まるか。無理なら同じxでブロックの真上へ退避
@@ -5489,15 +5646,20 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       ? lastRowY + lay.size * 0.35 + jaSize * 1.1 + (jaSegs.length - 1) * jaSize * 1.5 + jaSize * 0.12
       : lastRowY + lay.size * 0.30;
     const bandTop = blockBottom + 26;
-    const bandH = lanesN * (glossH + 6) + ptItems.length * pointH + (ptItems.length ? 6 : 0);
-    const SAFE_BOTTOM = mode === "duet" ? (slot === 0 ? 660 : -1) : mode === "single" ? 900 : 845; // duet下段は常に上退避
+    const bandH = botN * (glossH + 6) + ptItems.length * pointH + (ptItems.length ? 6 : 0);
+    let SAFE_BOTTOM = mode === "duet" ? (slot === 0 ? 660 : -1) : mode === "single" ? 900 : 845; // duet下段は通常上退避
+    if (multiRow && mode === "duet" && slot === 1) SAFE_BOTTOM = o.showJa ? 870 : 1020; // 折返し行の下グループは和訳バンドの上まで使う
     const below = SAFE_BOTTOM > 0 && bandTop + bandH <= SAFE_BOTTOM;
     const capTop = baseY0 - lay.size * 1.02;
-    // 上退避時はグロスを語に近い側（帯の下端）へ、ポイントはその上へ積む
-    const glossY = (lane) => below ? bandTop + lane * (glossH + 6) : capTop - 12 - (lanesN - lane) * (glossH + 6);
+    // 上グループは1段目の真上へ。下グループは帯へ（入らなければ上グループのさらに外側へ退避）
+    const aboveUnits = topN + (below ? 0 : botN);
+    const glossY = (it) => it.top
+      ? capTop - 12 - (topN - it.lane) * (glossH + 6)
+      : below ? bandTop + it.lane * (glossH + 6)
+      : capTop - 12 - topN * (glossH + 6) - (botN - it.lane) * (glossH + 6);
     const pointY = (i) => below
-      ? bandTop + lanesN * (glossH + 6) + 6 + i * pointH
-      : capTop - 12 - lanesN * (glossH + 6) - (ptItems.length - i) * pointH - 6;
+      ? bandTop + botN * (glossH + 6) + 6 + i * pointH
+      : capTop - 12 - aboveUnits * (glossH + 6) - (ptItems.length - i) * pointH - 6;
 
     const px = (v) => (v * s).toFixed(1) + "px";
     return html`
@@ -5505,14 +5667,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         style=${{ left: rect.left + "px", top: rect.top + "px", width: rect.width + "px", height: rect.height + "px" }}>
         ${!pre && items.flatMap((it) => it.segs.map((sg, i) => html`<div key=${"u" + it.key + "-" + i} className="an-underline"
           style=${{ left: px(sg.x1), top: px(sg.y), width: px(sg.x2 - sg.x1) }}></div>`))}
-        ${items.map((it) => html`<div key=${"g" + it.key} className="an-gloss"
-          style=${{ left: px(it.x), top: px(glossY(it.lane)), font: as.font((glossPx * s).toFixed(2)) }}>${it.nt.text}</div>`)}
+        ${labeled.map((it) => html`<div key=${"g" + it.key} className="an-gloss"
+          style=${{ left: px(it.x), top: px(glossY(it)), font: as.font((glossPx * s).toFixed(2)) }}>${it.nt.text}</div>`)}
         ${ptItems.map((tx, i) => html`<div key=${"p" + i} className="an-point"
           style=${{ left: px(clamp(CANVAS_W / 2 - ptWs[i] / 2, 40, CANVAS_W - 40 - ptWs[i])), top: px(pointY(i)), font: as.font((pointPx * s).toFixed(2)) }}>${tx}</div>`)}
       </div>`;
   });
 
-  function SheetView({ projRef, jaMode, scale, lastId, spokenRef, onLineTap, onLoopTap, onWordTap, bodyRef, onUserScroll, maskMode, openSet, onHoleTap, onMaskToggle, readRef, onReadTap, annotOn, penActive, penFrame, inkRef, penStRef, inkApiRef, onInkNotify }) {
+  function SheetView({ projRef, jaMode, scale, lastId, spokenRef, onLineTap, onLoopTap, onWordTap, bodyRef, onUserScroll, maskMode, openSet, onHoleTap, onMaskToggle, readRef, onReadTap, annotOn, recInfo, penActive, penFrame, inkRef, penStRef, inkApiRef, onInkNotify }) {
     const [, setTick] = useState(0);
     // ワイプ・現在行の追従用（rAFは非フォーカスタブで間引かれるためinterval駆動）
     useEffect(() => {
@@ -5540,7 +5702,11 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         <div className="sheet-inner" style=${{ "--shEn": sz.en + "px", "--shJa": sz.ja + "px", "--shN": sz.n + "px", "--shMin": sz.min + "px", "--shAn": (sz.an || 17) + "px" }}>
           <div className="sheet-head">
             <span className="t">${p.meta.title || "歌詞シート"}</span>
-            <span className="legend">${penActive ? (maskMode === "quiz" ? "✎ かきこみ中 — 穴をひらくときは ✕かきこみおわり（P）" : "✎ かきこみ中 — 1本ゆびで書く・2本ゆびでスクロール")
+            <span className="legend">${recInfo ? (recInfo.phase === "select" ? "🎙 録音するはんいをえらぼう — はじめの行 → おわりの行 をタップ"
+              : recInfo.phase === "rec" ? "⏺ ろくおん中 — マイクにむかって歌おう！"
+              : recInfo.phase === "review" ? "🎧 聞き直し中 — 下の ▶ できける（この録音は保存されません）"
+              : "🎙 録音のじゅんび中")
+              : penActive ? (maskMode === "quiz" ? "✎ かきこみ中 — 穴をひらくときは ✕かきこみおわり（P）" : "✎ かきこみ中 — 1本ゆびで書く・2本ゆびでスクロール")
               : maskMode === "quiz" ? "穴タップ=ひらく　行タップ=歌う　🔈=よみあげ　🔁=くり返し"
               : maskMode === "edit" ? "単語をタップ: かくす ⇔ もどす"
               : "行タップ=歌う　単語タップ=読み上げ　🔈=行をよみあげ　🔁=くり返し"}</span>
@@ -5558,7 +5724,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
             const isReading = !!(rd && rd.phase !== "idle" && rd.lineId === l.id); // 🔈読み上げ中の行
             return html`
               <div key=${l.id} role="button" data-lid=${l.id}
-                className=${"sheet-row" + (isCur ? " cur" : "") + (synced ? "" : " unsync") + (!isCur && lastId === l.id ? " last" : "") + (isReading ? " reading" : "")}
+                className=${"sheet-row" + (isCur ? " cur" : "") + (synced ? "" : " unsync") + (!isCur && lastId === l.id ? " last" : "") + (isReading ? " reading" : "")
+                  + (recInfo && recInfo.set.has(l.id) ? (recInfo.phase === "rec" ? " rec-live" : " rec-sel") : "")}
                 onClick=${synced ? () => onLineTap(l, n) : undefined}>
                 <span className="n tnum">${n}</span>
                 <div>
@@ -5598,7 +5765,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
                     const nts = l.notes || [];
                     if (!nts.length && !(l.point || "").trim()) return null;
                     return html`<div className="sheet-annot">
-                      ${nts.map((nt, i) => html`<span key=${i} className="annot-chip"><span className="aw">${nt.w}</span><span className="sep">─</span><span className="am">${nt.text}</span></span>`)}
+                      ${nts.map((nt, i) => html`<span key=${i} className="annot-chip"><span className="aw">${nt.w}</span>${nt.text ? html`<span className="sep">─</span><span className="am">${nt.text}</span>` : null}</span>`)}
                       ${(l.point || "").trim() ? html`<span className="annot-point"><span className="lamp">💡</span>${l.point}</span>` : null}
                     </div>`;
                   })()}
@@ -5652,6 +5819,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const [penTool, setPenTool] = useState(() => (loadSheetPrefs().penTool === "hl" ? "hl" : "pen")); // pen|hl|eraser
     const [penColor, setPenColor] = useState(() => (PEN_COLOR_ORDER.includes(loadSheetPrefs().penColor) ? loadSheetPrefs().penColor : "red"));
     const [readTrayOn, setReadTrayOn] = useState(false); // 🔈 よみトレイ（読み上げた行の道具・その場かぎり）
+    const [rec, setRec] = useState(null); // 🎙 れんしゅう録音 null | {phase:"notice"|"select"|"rec"|"review"|"err", a,b=はんいの行id, withMusic, playing, kind}
     const [annotOn, setAnnotOn] = useState(true); // 💡 注釈。授業モードに入るたび必ずON（記憶しない=「仕込んだのに出ない」事故防止）
     const [black, setBlack] = useState(false);
     const [uiOn, setUiOn] = useState(true);
@@ -5660,12 +5828,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const projRef = useRef(project); projRef.current = project;
     const ov2Ref = useRef(ov2); ov2Ref.current = ov2;
     const jaModeRef = useRef(jaMode); jaModeRef.current = jaMode;
-    const stRef = useRef({}); stRef.current = { buffer, sheetOn, black, voicePop, maskMode, maskPop, penOn, annotOn, uiOn, morePop };
+    const stRef = useRef({}); stRef.current = { buffer, sheetOn, black, voicePop, maskMode, maskPop, penOn, annotOn, uiOn, morePop, rec };
     const openSetRef = useRef(openSet); openSetRef.current = openSet;
     const penStRef = useRef({}); penStRef.current = { on: penOn, tool: penTool, color: penColor }; // インク層用ミラー（シート/PV共通）
     const inkRef = useRef({ strokes: [], ops: [], seq: 0, tops: {} }); // 歌詞シートのインク実体（保存しない・授業モード終了で消える）
     const inkApiRef = useRef(null);
-    const pvInkRef = useRef({ strokes: [], ops: [], seq: 0, size: null }); // PV画面のインク実体（シートとは別持ち）
+    const pvInkRef = useRef(null); // PV画面のインク実体（シートとは別持ち・行idごとのバケツ）
+    if (pvInkRef.current == null) pvInkRef.current = pvInkLoad(project); // 💾で保存した書き込みを、授業モードに入るたび復元
     const pvInkApiRef = useRef(null);
     const activeInkApi = () => (stRef.current.sheetOn ? inkApiRef.current : pvInkApiRef.current); // ↩🗑Zはいま見えている面に効く
     const maskFromRef = useRef("off"); // ✎仕込みに入る前の文脈（✔できあがり で戻る先）
@@ -5685,6 +5854,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     });
     const userScrollRef = useRef(0);    // 手動スクロールした時刻（自動追従の一時停止）
     const prevCurRef = useRef(null);
+    const recIO = useRef({ stream: null, mr: null, chunks: [], url: null, voice: null, range: null }); // 🎙 録音の実体（メモリのみ・保存しない）
+    const recFnRef = useRef({});        // interval監視から最新のrec関数を呼ぶための橋
+    const recPassEl = useRef(null);     // 🔓セーフティ鍵の入力欄（値はDOMにだけ・stateにも保存しない）
 
     // 和訳・行番号の一時切替: プロジェクトは書き換えず、描画時だけ差し替える
     const renderProject = () => {
@@ -5713,7 +5885,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       return () => { alive = false; cancelAnimationFrame(raf); clearInterval(iv); };
     }, []);
 
-    /* 終了時の後片付け: ループ解除・速度を戻す・読み上げ停止・全画面解除 */
+    /* 終了時の後片付け: ループ解除・速度を戻す・読み上げ停止・録音破棄＋マイク返却・全画面解除 */
     useEffect(() => () => {
       AE._loop.on = false;
       AE.setRate(1);
@@ -5721,6 +5893,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const r = readRef.current;
       r.session++; // 予約済みのonend・タイマーを無効化
       clearTimeout(r.timer); clearTimeout(r.safeTimer); clearTimeout(r.trayTimer); clearInterval(r.estTimer);
+      const io = recIO.current; // 🎙 録音は残さない・マイクも完全に返す（録音インジケータも消える）
+      try { if (io.mr && io.mr.state !== "inactive") { io.mr.onstop = null; io.mr.stop(); } } catch (e) {}
+      io.mr = null; io.chunks = [];
+      if (io.voice) { try { io.voice.pause(); } catch (e) {} io.voice = null; }
+      if (io.url) { try { URL.revokeObjectURL(io.url); } catch (e) {} io.url = null; }
+      try { io.stream && io.stream.getTracks().forEach((t) => t.stop()); } catch (e) {}
+      io.stream = null; io.range = null;
       if (!student && fsElement()) exitFullscreenSafe(); // 生徒版はタイトルに戻っても全画面のまま
     }, []);
 
@@ -5743,6 +5922,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         if (seg && AE.playing && AE.t() >= seg.end - 0.02) { AE.pause(); segRef.current = null; }
         const lp = AE._loop;
         if (lp.on && AE.playing && (AE.t() >= lp.end || AE.t() < lp.start - 1)) AE.seek(lp.start);
+        const rst = stRef.current.rec, io = recIO.current; // 🎙 はんいのおわりで録音を自動停止／聞き直しの曲も止める
+        if (rst && rst.phase === "rec" && io.range && AE.playing && AE.t() >= io.range.end - 0.02) recFnRef.current.finish && recFnRef.current.finish();
+        if (rst && rst.phase === "review" && rst.playing && rst.withMusic && io.range && AE.playing && AE.t() >= io.range.end + 0.4) AE.pause();
       }, 90);
       return () => clearInterval(iv);
     }, []);
@@ -5896,6 +6078,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
     /* ---------- ▦ 歌詞シート（タップで歌う） ---------- */
     const toggleSheet = () => {
+      if (stRef.current.rec) { doFlash("🎙 録音モード中です", "✕ おわる のあとで画面を切りかえられます"); return; }
       stopReadingAll(true); // 画面が替わるので読みかけは打ち切る
       const nv = !stRef.current.sheetOn;
       if (!nv) { TTS.stop(); setVoicePop(false); setMaskPop(false); }
@@ -5926,11 +6109,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     };
     const stopMask = () => { stopReadingAll(true); setMaskMode("off"); setMaskPop(false); wakeUi(); doFlash("穴あき おわり", "全部の歌詞が見えています"); };
     const toggleQuiz = () => { // Kキー: 速いトグル
+      if (stRef.current.rec) { doFlash("🎙 録音モード中です", "穴あきの切替は ✕ おわる のあとで"); return; }
       if (stRef.current.maskMode !== "off") { stopMask(); return; }
       if (countMasks(projRef.current) === 0) { setMaskPop(true); doFlash("—", "まだ単語をえらんでいません（おまかせ か ✎ でどうぞ）"); return; }
       startQuiz();
     };
     const maskBtnTap = () => { // ⬚ボタン: 入りは速く（仕込み済みなら即開始）・出はパネル経由（誤タップ防止）
+      if (stRef.current.rec) { doFlash("🎙 録音モード中です", "穴あきの切替は ✕ おわる のあとで"); return; }
       wakeUi();
       if (stRef.current.maskMode === "off" && countMasks(projRef.current) > 0) startQuiz();
       else setMaskPop((v) => !v);
@@ -5958,7 +6143,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         l.mask = [...s].sort((a, b) => a - b);
       }, { coalesce: true });
     };
-    const holeTap = (lineId, wi) => { wakeUi(); setOpenSet((prev) => { const s = new Set(prev); s.add(lineId + ":" + wi); return s; }); };
+    const holeTap = (lineId, wi) => {
+      if (stRef.current.rec && stRef.current.rec.phase === "rec") return; // ⏺中の誤タップで穴があかないように
+      wakeUi(); setOpenSet((prev) => { const s = new Set(prev); s.add(lineId + ":" + wi); return s; });
+    };
     const revealAll = () => { setOpenSet(new Set(allHoleKeys())); doFlash("🔓 全部あけました", "もう一度やるときは左下の「もう一度かくす」"); };
     const rehideAll = () => { setOpenSet(new Set()); doFlash("⬚ もう一度かくしました", "タップで1語ずつひらけます"); };
     const revealOrRehide = () => { // Aキー・左下ピル
@@ -6004,6 +6192,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (el) body.scrollTop = Math.max(0, el.offsetTop - body.clientHeight * 0.35);
     };
     const sheetLineTap = (l, n) => {
+      if (stRef.current.rec) { recLineTap(l); return; } // 🎙中の行タップ=はんいえらび
       wakeUi();
       stopReadingAll(true); // 歌う操作は読みを打ち切る
       const now = Date.now();
@@ -6015,6 +6204,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       playLineSegment(l);
     };
     const sheetLoopTap = (l, n, fromDouble) => {
+      if (stRef.current.rec) return; // 🎙中はループしない（録音とぶつかるため）
       wakeUi();
       stopReadingAll(true);
       if (AE._loop.on && AE._loop.lineId === l.id) {
@@ -6029,6 +6219,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       doFlash("🔁 " + n + "行目", "くり返し中（もう一度タップで解除）");
     };
     const sheetWordTap = (tok, lineId, wi) => {
+      if (stRef.current.rec) return; // 🎙中はTTSを鳴らさない（録音と行タップの迷いを増やさない）
       wakeUi();
       readStop(true); // 行よみあげ中の単語タップ=単語読みに切替（トレイは残す）
       const clean = tok.replace(/[^A-Za-z'’-]/g, "");
@@ -6157,6 +6348,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       return true;
     };
     const readRowTap = (l) => { // 行の🔈: よみあげ / もう一度おす=停止
+      if (stRef.current.rec) { doFlash("🎙 録音モード中はよみあげはお休み", "✕ おわる のあとでどうぞ"); return; }
       const r = readRef.current;
       if (r.phase !== "idle" && r.lineId === l.id) { readStop(); return; }
       r.slow = false;
@@ -6168,6 +6360,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       return currentLine().cur;
     };
     const readCurrent = (slow) => { // R（PVの「🔈 よみ」も）。読み上げ中のR=停止・Shift+R=ゆっくり
+      if (stRef.current.rec) { doFlash("🎙 録音モード中はよみあげはお休み", "✕ おわる のあとでどうぞ"); return; }
       const r = readRef.current;
       if (!slow && r.phase !== "idle") { readStop(); return; }
       const l = readTargetLine();
@@ -6177,6 +6370,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         doFlash((r.slow ? "🐢 " : "🔈 ") + lineNumOf(l) + "行目をよみます", student ? "歌は止まったまま。▶ で再開できます" : "歌は止まったまま。▶（スペース）で再開できます");
     };
     const readCompare = () => { // U=うた⇔よみ
+      if (stRef.current.rec) { doFlash("🎙 録音モード中はよみあげはお休み", "✕ おわる のあとでどうぞ"); return; }
       const r = readRef.current;
       const l = readTargetLine();
       if (!l) { doFlash("🔈 よめる行がありません", "曲を少しすすめて、行に入ってから どうぞ"); return; }
@@ -6190,7 +6384,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (slow !== undefined) r.slow = slow;
       startRead(r.line, act);
     };
-    const userPlayToggle = () => { // ▶ボタン・画面クリック・スペース共通（読み上げとの交通整理）
+    const userPlayToggle = () => { // ▶ボタン・画面クリック・スペース共通（読み上げ/録音との交通整理）
+      const rc = stRef.current.rec;
+      if (rc) { // 🎙中の▶/スペース: 録音中=とめる・聞き直し=再生⇔停止・それ以外は曲を動かさない
+        if (rc.phase === "rec") { recFinish(); return; }
+        if (rc.phase === "review") { recPlayToggle(); return; }
+        return;
+      }
       const r = readRef.current;
       if (r.phase === "singing") { stopReadingAll(true); return; } // うた⇔よみの歌を止めるだけ
       stopReadingAll(true); // 読みかけは打ち切って、ふつうの再生/停止へ
@@ -6215,12 +6415,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     };
     const togglePen = () => {
       const st = stRef.current;
+      if (st.rec) { doFlash("🎙 録音モード中はペンはお休み", "✕ おわる のあとでどうぞ"); return; }
       if (st.penOn) { exitPen(); return; }
       if (st.sheetOn && st.maskMode === "edit") endEdit(); // 仕込み中なら「✔できあがり」扱いで抜けてからペンへ（拒否しない）
       setPenOn(true); setVoicePop(false); setMaskPop(false); wakeUi();
       doFlash("✎ かきこみモード", st.sheetOn
         ? (student ? "1本ゆびで書く・2本ゆびでスクロール（✕でおわり・保存はされません）" : "1本ゆびで書く・2本ゆびでスクロール（P でおわり・保存はされません）")
-        : (student ? "画面に直接かけます（✕でおわり・保存はされません）" : "画面に直接かけます（P でおわり・保存はされません）"));
+        : (student ? "かきこみは今の行とセットでのこります（✕でおわり・保存はされません）" : "かきこみは今の行とセットでのこります（💾でこの曲に保存できます・P でおわり）"));
     };
     const penPickTool = (t) => {
       setPenTool(t); wakeUi();
@@ -6250,12 +6451,209 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const api = activeInkApi();
       if (!api || !api.hasInk()) { doFlash("—", "消すものが ありません"); return; }
       api.clearAll(true);
-      doFlash("🗑 ぜんぶ消しました", "↩ 1つもどす で復活できます");
+      doFlash(stRef.current.sheetOn ? "🗑 ぜんぶ消しました" : "🗑 この画面のぶんを消しました", "↩ 1つもどす で復活できます");
+    };
+    const penSaveInk = () => { // 💾 PVの書き込みをぜんぶ（全行ぶん）この曲に保存。もう一度押すと今の状態で上書き＝保存からの消去もこれ
+      const out = pvInkSave(pvInkRef.current.buckets, projRef.current);
+      const nLines = Object.keys(out).length, nStrokes = Object.values(out).reduce((a, b) => a + b.length, 0);
+      onCommit((np) => { if (nLines) np.pvInk = out; else delete np.pvInk; });
+      doFlash(nLines ? "💾 とっておきました" : "💾 まっさらにしました",
+        nLines ? nLines + "行に" + nStrokes + "本 — この曲といっしょに保存" : "とってあった書き込みも消しました");
     };
     const onInkNotify = useCallback((type) => { // インク層からの通知（memoを壊さないよう恒等安定）
       if (type === "bump") { userScrollRef.current = Date.now(); return; } // 描画中は自動追従を保留
       if (type === "layout-cleared") doFlash("かきこみを消しました", "画面の大きさが かわったため");
     }, []);
+
+    /* ---------- 🎙 れんしゅう録音（その場かぎり・どこにも保存しない） ----------
+       ・マイクは echoCancellation=ON ＝ スピーカーから流れる曲を打ち消して、声を中心に録る
+       ・聞き直しは「🎵曲といっしょ」（声の再生に合わせて曲も同時再生）⇔「🎤声だけ」
+       ・録音の実体はメモリ上のBlobだけ（保存/送信のコードがそもそも無い）。
+         破棄= ✕おわる / 録り直し / 画面を出る / 授業モード終了 のすべてで即時 */
+    const REC_NOTICE = [ // 文面は先生の指定どおり（変更しない）
+      "録音は、歌の練習のためだけに使います。ふざけたり遊びで録音しないように。",
+      "録音した歌声を、わらったり からかったり絶対しない。挑戦することを応援する練習にしよう。",
+      "この録音はどこにも保存・送信されません。聞き終わったら消えます。",
+    ];
+    const recSupported = () => !!(navigator.mediaDevices && navigator.mediaDevices.getUserMedia && window.MediaRecorder);
+    const recMime = () => { // Safari=audio/mp4 / Chrome=webm。どちらも無ければブラウザおまかせ
+      for (const m of ["audio/mp4", "audio/webm;codecs=opus", "audio/webm"]) {
+        try { if (MediaRecorder.isTypeSupported(m)) return m; } catch (e) {}
+      }
+      return "";
+    };
+    const recDropTake = () => { // いまの録音（テイク）だけを破棄
+      const io = recIO.current;
+      if (io.voice) { try { io.voice.pause(); } catch (e) {} io.voice.onended = null; io.voice = null; }
+      if (io.url) { try { URL.revokeObjectURL(io.url); } catch (e) {} io.url = null; }
+      io.chunks = [];
+    };
+    const recReleaseAll = () => { // 録音もマイクも全部返す（画面上のマイク使用中マークも消える）
+      const io = recIO.current;
+      try { if (io.mr && io.mr.state !== "inactive") { io.mr.onstop = null; io.mr.stop(); } } catch (e) {}
+      io.mr = null;
+      recDropTake();
+      try { io.stream && io.stream.getTracks().forEach((t) => t.stop()); } catch (e) {}
+      io.stream = null; io.range = null;
+    };
+    const exitRec = (silent) => { // ✕おわる（唯一の出口。ここを通れば必ず消えている）
+      if (AE.playing) AE.pause();
+      segRef.current = null;
+      recReleaseAll();
+      setRec(null);
+      if (!silent) doFlash("🎙 録音おわり", "録音は消えました（保存されていません）");
+    };
+    const toggleRec = () => { // 🎙ボタン
+      if (stRef.current.rec) { exitRec(); return; }
+      if (!recSupported()) { doFlash("🎙 この環境では録音できません", "新しめの Safari / Chrome でひらいてください"); return; }
+      stopReadingAll(true);
+      clearLoop();
+      if (AE.playing) AE.pause();
+      AE.setRate(1); // 0.5×のまま録ると聞き直しがズレるため通常速度へ
+      setPenOn(false);
+      if (stRef.current.maskMode === "edit") endEdit();
+      setVoicePop(false); setMaskPop(false); setMorePop(false);
+      wakeUi();
+      setRec({ phase: "lock", bad: false }); // 🔓セーフティ鍵（先生のあいことば）→ 約束カード。どちらも毎回
+    };
+    /* 🔓 セーフティ鍵＝「きょうの日付8桁 + singsync」（例: 20260807singsync）。
+       端末の日付から毎回その場で計算するので、あいことばは毎日自動で変わる。
+       入力値・解錠状態はどこにも保存しない（stateすら使わず、成功したら次のカードへ進むだけ） */
+    const recPassToday = () => {
+      const d = new Date(), p = (n) => String(n).padStart(2, "0");
+      return `${d.getFullYear()}${p(d.getMonth() + 1)}${p(d.getDate())}singsync`;
+    };
+    const recUnlockTry = () => {
+      const el = recPassEl.current;
+      const v = String((el && el.value) || "").normalize("NFKC").trim().toLowerCase(); // 全角数字・大文字・前後の空白は許す
+      if (el) el.value = "";
+      if (v === recPassToday()) { setRec({ phase: "notice" }); return; }
+      setRec({ phase: "lock", bad: true });
+      if (el) el.focus();
+    };
+    const recRequestMic = () => { // マイク許可（はんいをえらんでいる間に裏で準備）
+      const io = recIO.current;
+      if (io.stream && io.stream.getTracks().some((t) => t.readyState === "live")) return;
+      navigator.mediaDevices.getUserMedia({ audio: { echoCancellation: true, noiseSuppression: false, autoGainControl: true } })
+        .then((s) => {
+          if (!stRef.current.rec) { try { s.getTracks().forEach((t) => t.stop()); } catch (e) {} return; } // すでに✕おわる済み
+          io.stream = s;
+        })
+        .catch(() => { if (stRef.current.rec) setRec({ phase: "err", kind: "mic" }); });
+    };
+    const recConfirmNotice = () => { // 「かくにんしました」→ はんいえらびへ
+      setRec({ phase: "select", a: null, b: null });
+      doFlash("🎙 はんいをえらぶ", "はじめの行 → おわりの行 をタップ");
+      recRequestMic();
+    };
+    const recRange = (st) => { // a/b（タップ順）→ 同期済み歌詞行のはんい情報
+      if (!st || !st.a) return null;
+      const ls = lyricLines(projRef.current).filter((l) => l.tStart != null);
+      const ia = ls.findIndex((l) => l.id === st.a);
+      if (ia < 0) return null;
+      const ibRaw = st.b ? ls.findIndex((l) => l.id === st.b) : ia;
+      const ib = ibRaw < 0 ? ia : ibRaw;
+      const i0 = Math.min(ia, ib), i1 = Math.max(ia, ib);
+      const lines = ls.slice(i0, i1 + 1);
+      return { lines, n0: i0 + 1, n1: i1 + 1, tA: lines[0].tStart, tB: lines[lines.length - 1].tEnd };
+    };
+    const recLineTap = (l) => { // 🎙中の行タップ（sheetLineTapから横取り）
+      const st = stRef.current.rec;
+      if (!st || st.phase !== "select") return; // ⏺中・聞き直し中は行タップを受けない（誤操作防止）
+      if (l.tStart == null) { doFlash("—", "この行はまだ同期されていません"); return; }
+      wakeUi();
+      if (!st.a || st.b) setRec({ phase: "select", a: l.id, b: null }); // えらび直し（3回目のタップ=新しいはじめの行）
+      else setRec({ phase: "select", a: st.a, b: l.id });
+    };
+    const recStart = () => { // ⏺ 録音スタート（歌い出しの2秒前から曲が流れる=カウントイン代わり）
+      const st = stRef.current.rec, io = recIO.current;
+      const r = recRange(st);
+      if (!r) return;
+      if (!io.stream || !io.stream.getTracks().some((t) => t.readyState === "live")) { setRec({ phase: "err", kind: "mic" }); return; }
+      recDropTake();
+      const t0 = Math.max(0, r.tA - 2.0);
+      const end = Math.min(AE.duration || r.tB + 0.15, r.tB + 0.15);
+      io.range = { t0, end, a: st.a, b: st.b };
+      let mr = null;
+      const mm = recMime();
+      try { mr = new MediaRecorder(io.stream, mm ? { mimeType: mm } : undefined); }
+      catch (e) { try { mr = new MediaRecorder(io.stream); } catch (e2) { setRec({ phase: "err", kind: "rec" }); return; } }
+      io.mr = mr;
+      mr.ondataavailable = (e) => { if (e.data && e.data.size) io.chunks.push(e.data); };
+      mr.onstart = () => { AE.seek(t0); AE.play(); }; // 録音が実際に始まってから曲を流す=頭が切れない
+      mr.onerror = () => { if (stRef.current.rec) { AE.pause(); setRec({ phase: "err", kind: "rec" }); } };
+      mr.onstop = () => {
+        const blob = new Blob(io.chunks, { type: mr.mimeType || "audio/mp4" });
+        io.chunks = []; io.mr = null;
+        if (!stRef.current.rec) return; // すでに✕おわる済み（何も残さない）
+        if (blob.size < 1500) { setRec({ phase: "err", kind: "rec" }); return; }
+        io.url = URL.createObjectURL(blob);
+        const a = new Audio(io.url);
+        a.onended = () => { // 声が終わったら曲も止め、▶に戻す
+          if (AE.playing) AE.pause();
+          setRec((cur) => (cur && cur.phase === "review" ? { ...cur, playing: false } : cur));
+        };
+        io.voice = a;
+        setRec({ phase: "review", a: io.range.a, b: io.range.b, withMusic: true, playing: false });
+        doFlash("🎧 きいてみよう", "▶ で聞き直し・🎤声だけ にも切りかえられます");
+      };
+      setRec({ phase: "rec", a: st.a, b: st.b });
+      try { mr.start(); } catch (e) { setRec({ phase: "err", kind: "rec" }); return; }
+      setTimeout(() => { // onstartが来ない環境の保険（曲が始まらないまま固まらない）
+        const s2 = stRef.current.rec;
+        if (s2 && s2.phase === "rec" && io.mr === mr && !AE.playing) { AE.seek(t0); AE.play(); }
+      }, 350);
+    };
+    const recFinish = () => { // はんいのおわり/⏹ → 残響を0.25秒だけ録ってから締める
+      const io = recIO.current;
+      if (AE.playing) AE.pause();
+      const mr = io.mr;
+      if (!mr || mr.state === "inactive") return;
+      setTimeout(() => { try { if (mr.state !== "inactive") mr.stop(); } catch (e) {} }, 250);
+    };
+    const recCancelTake = () => { // ⏺中の✕＝この録音は使わずに、はんいえらびへ戻る
+      const io = recIO.current;
+      if (AE.playing) AE.pause();
+      try { if (io.mr && io.mr.state !== "inactive") { io.mr.onstop = null; io.mr.stop(); } } catch (e) {}
+      io.mr = null; io.chunks = [];
+      const st = stRef.current.rec;
+      setRec({ phase: "select", a: st ? st.a : null, b: st ? st.b : null });
+      doFlash("録音をやめました", "この録音はのこっていません");
+    };
+    const recStopPlay = () => {
+      const io = recIO.current;
+      if (io.voice) { try { io.voice.pause(); io.voice.currentTime = 0; } catch (e) {} }
+      if (AE.playing) AE.pause();
+      setRec((cur) => (cur && cur.phase === "review" ? { ...cur, playing: false } : cur));
+    };
+    const recPlayToggle = () => { // ▶きく / ⏸とめる
+      const st = stRef.current.rec, io = recIO.current;
+      if (!st || st.phase !== "review" || !io.voice) return;
+      if (st.playing) { recStopPlay(); return; }
+      try { io.voice.currentTime = 0; } catch (e) {}
+      if (st.withMusic && io.range) AE.seek(io.range.t0);
+      const p = io.voice.play();
+      (p && p.then ? p : Promise.resolve())
+        .then(() => { // 録ったときと同じ順番（録音開始→曲）で追いかけさせ、ズレを打ち消す
+          const s2 = stRef.current.rec;
+          if (s2 && s2.phase === "review" && s2.withMusic && io.range) AE.play();
+        })
+        .catch(() => {});
+      setRec({ ...st, playing: true });
+    };
+    const recSetMusic = (withMusic) => { // 🎵曲といっしょ ⇔ 🎤声だけ
+      const st = stRef.current.rec;
+      if (!st || st.phase !== "review" || st.withMusic === withMusic) return;
+      recStopPlay();
+      setRec({ ...st, withMusic, playing: false });
+      doFlash(withMusic ? "🎵 曲といっしょ" : "🎤 声だけ", withMusic ? "録ったときと同じ聞こえ方できけます" : "自分たちの声を たしかめよう");
+    };
+    const recRetake = () => { // 🔁もう一度うたう（いまの録音は消して同じはんいで録り直し）
+      recStopPlay();
+      recDropTake();
+      recStart();
+    };
+    recFnRef.current = { finish: recFinish };
 
     /* キーボード（授業モード専用。編集側のショートカットは App が present 中は無効化） */
     useEffect(() => {
@@ -6265,6 +6663,17 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         if (e.metaKey || e.ctrlKey || e.altKey) return;
         const st = stRef.current;
         wakeUi();
+        if (st.rec) { // 🎙 録音モード中は専用キーだけ（行ジャンプ等で録音がズレないように）
+          if (e.code === "Space") { if (!e.repeat) { e.preventDefault(); userPlayToggle(); } return; }
+          if (e.key === "Escape") {
+            if (st.rec.phase === "rec") { recCancelTake(); return; } // ⏺中のEsc=この録音をやめる
+            exitRec(); return;
+          }
+          const k0 = e.key.toLowerCase();
+          if (k0 === "t") { cycleJaMode(); return; } // 見た目の切替だけは生かす
+          if (k0 === "g") { toggleAnnot(); return; }
+          return;
+        }
         if (e.key >= "0" && e.key <= "9" && !e.repeat) {
           e.preventDefault();
           setBuffer((b) => (b + e.key).slice(0, 3));
@@ -6333,6 +6742,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     };
     const onSeekDown = (e) => {
       e.preventDefault();
+      if (stRef.current.rec) return; // 🎙中のシークは録音がズレるので受けない
       stopReadingAll(true);
       clearLoop();
       const el = e.currentTarget;
@@ -6347,6 +6757,12 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const { cur } = currentLine();
     const curNum = cur ? lineNumOf(cur) : null;
     const readActive = readRef.current.phase !== "idle"; // 表示は250msのtickが追従
+    const recSel = (() => { // 🎙 シートに渡す範囲ハイライト情報
+      if (!rec || !sheetOn) return null;
+      const within = rec.phase === "select" || rec.phase === "rec" || rec.phase === "review";
+      const r = within ? recRange(rec) : null;
+      return { phase: rec.phase, set: new Set(r ? r.lines.map((l) => l.id) : []) };
+    })();
     const rate = AE.el.playbackRate;
     const maskCount = countMasks(project);
     const annotLines = project.lines.filter((l) => l.type === "lyric" && ((l.notes || []).length || (l.point || "").trim())).length; // 💡注釈のある行数（0ならボタンも出さない）
@@ -6359,7 +6775,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           style=${penOn && !sheetOn && penTool !== "eraser" ? { "--penc": PEN_COLORS[penColor] } : undefined}
           onClick=${stageTap}>
           <canvas ref=${canvasRef} width=${CANVAS_W} height=${CANVAS_H}></canvas>
-          ${!sheetOn && html`<${PvInkLayer} inkRef=${pvInkRef} penStRef=${penStRef} inkApiRef=${pvInkApiRef} onNotify=${onInkNotify} />`}
+          ${!sheetOn && html`<${PvInkLayer} inkRef=${pvInkRef} penStRef=${penStRef} inkApiRef=${pvInkApiRef} projRef=${projRef} ov2Ref=${ov2Ref} />`}
         </div>
         ${!sheetOn && html`<${PvReadCard} readRef=${readRef} projRef=${projRef} open=${readTrayOn} penOn=${penOn} />`}
         ${!sheetOn && annotOn && annotLines > 0 && !black && html`<${PvAnnot} projRef=${projRef} ov2Ref=${ov2Ref} canvasRef=${canvasRef} />`}
@@ -6381,7 +6797,12 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
                   style=${{ background: PEN_COLORS[c] }} onClick=${() => penPickColor(c)} title=${PEN_COLOR_LABELS[c] + "（C で色切替）"}></button>`)}
               <span className="pt-sep"></span>
               <button className="present-btn" onClick=${penUndo} title="直前の線をとりけす（Z）">↩ 1つもどす</button>
-              <button className="present-btn" onClick=${penClearAll} title="書いたものを全部消す（↩ でもどせる）">🗑 ぜんぶ消す</button>
+              <button className="present-btn" onClick=${penClearAll}
+                title=${sheetOn ? "書いたものを全部消す（↩ でもどせる）" : "いま見えている行の書き込みを消す（↩ でもどせる・ほかの行のぶんは残る）"}>
+                ${sheetOn ? "🗑 ぜんぶ消す" : "🗑 この画面を消す"}</button>
+              ${!sheetOn && !student && html`
+                <button className="present-btn" onClick=${penSaveInk}
+                  title="ぜんぶの行の書き込みを、この曲にいっしょに保存する（もう一度押すと今の状態で上書き＝消してから押せば保存からも消える）">💾 とっておく</button>`}
               <span className="pt-sep"></span>
               <button className="present-btn" onClick=${exitPen} title="ペンをおいて、タップ操作にもどる（P / Esc）">✕ かきこみ おわり</button>
             </div>`}
@@ -6409,6 +6830,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
                   title="単語をかくして穴あきリスニング（K）">${maskMode !== "off" ? "⬚ 穴あき中" : maskCount > 0 ? "⬚ 穴あき·" + maskCount : "⬚ 穴あき"}</button>
                 <button className=${"present-btn" + (penOn ? " on" : "")} onClick=${togglePen}
                   title="歌詞に丸や線を書ける（P）その場かぎりで、保存されません">${penOn ? "✎ かきこみ中" : "✎ かきこみ"}</button>
+                <button className=${"present-btn" + (rec ? " rec-on" : "")} onClick=${toggleRec}
+                  title=${rec ? "録音モードをおわる（録音は消えます）" : "れんしゅう録音（歌って聞き直す・どこにも保存されません）"}>${rec ? "🎙 録音中" : "🎙 録音"}</button>
                 ${!student && html`<button className=${"present-btn" + (voicePop ? " on" : "")} onClick=${() => setVoicePop((v) => !v)}
                   title="単語読み上げの声をえらぶ">🗣 声</button>`}`
               : html`
@@ -6508,7 +6931,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           spokenRef=${spokenRef} onLineTap=${sheetLineTap} onLoopTap=${sheetLoopTap} onWordTap=${sheetWordTap}
           bodyRef=${sheetBodyRef} onUserScroll=${() => { userScrollRef.current = Date.now(); }}
           maskMode=${maskMode} openSet=${openSet} onHoleTap=${holeTap} onMaskToggle=${maskToggle}
-          readRef=${readRef} onReadTap=${readRowTap} annotOn=${annotOn}
+          readRef=${readRef} onReadTap=${readRowTap} annotOn=${annotOn} recInfo=${recSel}
           penActive=${penOn} penFrame=${penTool === "eraser" ? "eraser" : PEN_COLORS[penColor]}
           inkRef=${inkRef} penStRef=${penStRef} inkApiRef=${inkApiRef} onInkNotify=${onInkNotify} />`}
         ${sheetOn && maskMode === "edit" && html`
@@ -6520,6 +6943,83 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         ${sheetOn && maskMode === "quiz" && maskCount > 0 && html`
           <button className="mask-pill" onClick=${revealOrRehide} title="穴あきの一括操作（A）">
             ${anyClosed ? "🔓 全部あける" : "⬚ もう一度かくす"}</button>`}
+        ${sheetOn && rec && rec.phase === "select" && (() => { // 🎙 はんいえらびバナー
+          const r = recRange(rec);
+          return html`
+            <div className="rec-banner" onClick=${(e) => e.stopPropagation()}>
+              <span className="rb-dot"></span>
+              <span>${r ? "🎙 " + (r.n0 === r.n1 ? r.n0 + "行め" : r.n0 + "〜" + r.n1 + "行め") + "（約" + Math.max(1, Math.round(r.tB - r.tA)) + "秒）" : "🎙 はじめの行 → おわりの行 をタップ"}</span>
+              <button className="rb-main" disabled=${!r} onClick=${recStart}>⏺ 録音スタート</button>
+              <button className="rb-x" onClick=${() => exitRec()}>✕ やめる</button>
+            </div>`;
+        })()}
+        ${sheetOn && rec && rec.phase === "rec" && (() => { // ⏺ 録音中バナー（残り秒は250msのtickが追従）
+          const io = recIO.current;
+          const left = io.range ? Math.max(0, Math.ceil(io.range.end - AE.t())) : 0;
+          return html`
+            <div className="rec-banner live" onClick=${(e) => e.stopPropagation()}>
+              <span className="rb-dot on"></span>
+              <span>ろくおん中 — うたおう！（のこり ${left}秒）</span>
+              <button className="rb-main" onClick=${recFinish}>⏹ ここでおわる</button>
+              <button className="rb-x" onClick=${recCancelTake}>✕ やめる</button>
+            </div>`;
+        })()}
+        ${sheetOn && rec && rec.phase === "review" && html`
+          <div className="rec-tray" onClick=${(e) => e.stopPropagation()}>
+            <button className=${"rt-btn" + (rec.playing ? " on" : "")} onClick=${recPlayToggle}>${rec.playing ? "⏸ とめる" : "▶ きく"}</button>
+            <button className=${"rt-btn" + (rec.withMusic ? " on" : "")} onClick=${() => recSetMusic(true)} title="録ったときと同じ聞こえ方">🎵 曲といっしょ</button>
+            <button className=${"rt-btn" + (!rec.withMusic ? " on" : "")} onClick=${() => recSetMusic(false)} title="自分たちの声だけをきく">🎤 声だけ</button>
+            <button className="rt-btn" onClick=${recRetake} title="いまの録音は消して、同じはんいで録り直し">🔁 もう一度うたう</button>
+            <button className="rt-x" onClick=${() => exitRec()} title="録音を消しておわる">✕</button>
+            <span className="rec-note">🔒 ほぞんされない練習用の録音です（おわると消えます）</span>
+          </div>`}
+        ${rec && rec.phase === "lock" && html`
+          <div className="rec-notice">
+            <div className="rec-notice-card" onClick=${(e) => e.stopPropagation()}>
+              <div className="rn-mic">🔓</div>
+              <div className="rn-head">せんせいを よんでください</div>
+              <div className="rn-item">録音は、先生の「きょうの あいことば」でひらきます。グループみんなで先生をよんで、ここに入力してもらってね。</div>
+              <div className="rn-passrow">
+                <input className="rn-pass" type="password" autocomplete="off" autocapitalize="off" spellcheck=${false}
+                  enterkeyhint="go" placeholder="きょうの あいことば"
+                  ref=${(el) => { recPassEl.current = el; if (el && !el._focused) { el._focused = 1; setTimeout(() => { try { el.focus(); } catch (e) {} }, 60); } }}
+                  onKeyDown=${(e) => { e.stopPropagation(); if (imeKey(e)) return; if (e.key === "Enter") { e.preventDefault(); recUnlockTry(); } }} />
+                <button className="rn-show" onClick=${() => { const el = recPassEl.current; if (el) { el.type = el.type === "password" ? "text" : "password"; el.focus(); } }}>見せる/かくす</button>
+              </div>
+              ${rec.bad && html`<div className="rn-bad">あいことばが ちがいます</div>`}
+              <div className="rn-sub">あいことばは毎日かわります（この画面は何も記憶しません）</div>
+              <div className="rn-btns">
+                <button className="rn-go" onClick=${recUnlockTry}>🔓 ひらく</button>
+                <button className="rn-no" onClick=${() => exitRec(true)}>やめる</button>
+              </div>
+            </div>
+          </div>`}
+        ${rec && rec.phase === "notice" && html`
+          <div className="rec-notice">
+            <div className="rec-notice-card" onClick=${(e) => e.stopPropagation()}>
+              <div className="rn-mic">🎙</div>
+              <div className="rn-head">録音するまえに、確認してください。</div>
+              ${REC_NOTICE.map((t, i) => html`<div key=${i} className="rn-item">${t}</div>`)}
+              <div className="rn-btns">
+                <button className="rn-go" onClick=${recConfirmNotice}>✔ グループでかくにんしました</button>
+                <button className="rn-no" onClick=${() => exitRec(true)}>やめる</button>
+              </div>
+            </div>
+          </div>`}
+        ${rec && rec.phase === "err" && html`
+          <div className="rec-notice">
+            <div className="rec-notice-card" onClick=${(e) => e.stopPropagation()}>
+              <div className="rn-mic">🎙</div>
+              <div className="rn-head">${rec.kind === "mic" ? "マイクが使えませんでした" : "録音がうまくいきませんでした"}</div>
+              <div className="rn-item">${rec.kind === "mic"
+                ? "画面に出る「マイクへのアクセスを許可しますか？」で「許可」をえらんでください。出てこないときは、いちど✕でおわってページを読み込み直してみてね。それでもだめなときは、先生に「マイクが許可できない」とつたえてください。"
+                : "もう一度ためしてみてください。なおらないときは、いちど✕でおわってから、ページを読み込み直してみてね。"}</div>
+              <div className="rn-btns">
+                <button className="rn-go" onClick=${recConfirmNotice}>もう一度ためす</button>
+                <button className="rn-no" onClick=${() => exitRec(true)}>やめる</button>
+              </div>
+            </div>
+          </div>`}
         ${sheetOn && showFollowPill && html`
           <button className="sheet-follow" onClick=${() => { userScrollRef.current = 0; centerCur(); }}>▼ いまの行へ</button>`}
         ${readTrayOn && readRef.current.line && (() => { // 🔈 よみトレイ（読み上げた行の道具・自動では閉じない）
@@ -6543,7 +7043,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
               <div className="gt">はじめてガイド</div>
               <div>・行をタップ → その行をうたうよ（もう一度タップで止まる）</div>
               <div>・単語をタップ → 発音が聞けるよ</div>
-              <div>・下のボタンで ⬚穴あき や ✎かきこみ ができるよ</div>
+              <div>・下のボタンで ⬚穴あき・✎かきこみ・🎙録音 ができるよ</div>
               <div className="gs">画面のどこかをタップしてはじめよう</div>
             </div>
           </div>`}
