@@ -5864,6 +5864,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     });
     const userScrollRef = useRef(0);    // 手動スクロールした時刻（自動追従の一時停止）
     const sheetAnimRef = useRef(0);     // 追従スライドのrAF（指スクロールで即中止＝指が勝つ）
+    const sheetGoalRef = useRef(null);  // いま向かっている目標scrollTop（行の高さ変化の置きずれ検知用）
     const prevCurRef = useRef(null);
     const recIO = useRef({ stream: null, mr: null, chunks: [], url: null, voice: null, range: null }); // 🎙 録音の実体（メモリのみ・保存しない）
     const recFnRef = useRef({});        // interval監視から最新のrec関数を呼ぶための橋
@@ -5968,11 +5969,27 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       const iv = setInterval(() => {
         const body = sheetBodyRef.current;
         if (!body) return;
-        const { cur } = currentLine();
-        const cid = cur ? cur.id : null;
+        const { cur, ls } = currentLine();
+        // 先回りスクロール: 次の行の歌い出し0.75秒前にスライドを始める
+        // ＝歌い出しの瞬間には行が定位置に着いていて、カラオケワイプが頭から見える
+        let tgt = cur;
+        if (AE.playing) {
+          const nxt = ls[cur ? ls.indexOf(cur) + 1 : 0];
+          if (nxt && nxt.tStart - AE.t() <= 0.75) tgt = nxt;
+        }
+        const cid = tgt ? tgt.id : null;
         if (cid !== prevCurRef.current) {
           prevCurRef.current = cid;
-          if (AE.playing && Date.now() - userScrollRef.current > 4000) scrollCur();
+          if (AE.playing && Date.now() - userScrollRef.current > 4000) scrollCur(false, cid);
+        } else if (cid && AE.playing && Date.now() - userScrollRef.current > 4000 && sheetGoalRef.current != null
+          && Math.abs(body.scrollTop - sheetGoalRef.current) < 40) {
+          // 行の高さ変化（和訳:今の行・注釈のつけ外し等）で目標がずれたら、そっと合わせ直す
+          // （scrollTopが目標近くのときだけ＝読み返し中の生徒を引っぱらない）
+          const el = body.querySelector('.sheet-row[data-lid="' + cid + '"]');
+          if (el) {
+            const tg = Math.max(0, Math.min(el.offsetTop - body.clientHeight * 0.12, body.scrollHeight - body.clientHeight));
+            if (Math.abs(tg - sheetGoalRef.current) > 24) scrollCur(false, cid);
+          }
         }
         const el = body.querySelector(".sheet-row.cur");
         let off = false;
@@ -5981,7 +5998,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           off = el.offsetTop + el.offsetHeight < bt + 40 || el.offsetTop > bt + bh - 170;
         }
         setShowFollowPill(off);
-      }, 400);
+      }, 150); // 400→150ms: 先回り0.75秒前をとりこぼさない検知間隔
       return () => { clearTimeout(openId); clearInterval(iv); cancelAnimationFrame(sheetAnimRef.current); };
     }, [sheetOn]);
 
@@ -6196,12 +6213,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       setAnnotOn(nv);
       doFlash(nv ? "💡 注釈を表示" : "💡 注釈をかくす", nv ? "歌詞の語の下に、意味がそっと出ます" : (student ? "💡 でいつでも出せます" : "G でいつでも出せます"));
     };
-    const scrollCur = (instant) => { // いま歌っている行を画面の上部へ（和訳・注釈で行が背高でも、下に「次に歌う行」が見える）
+    const scrollCur = (instant, lid) => { // いま歌っている行（lid指定なら先回りでその行）を画面の上部へ（和訳・注釈で行が背高でも、下に「次に歌う行」が見える）
       const body = sheetBodyRef.current;
       if (!body) return;
-      const el = body.querySelector(".sheet-row.cur");
+      const el = (lid && body.querySelector('.sheet-row[data-lid="' + lid + '"]')) || body.querySelector(".sheet-row.cur");
       if (!el) return;
       const target = Math.max(0, Math.min(el.offsetTop - body.clientHeight * 0.12, body.scrollHeight - body.clientHeight));
+      sheetGoalRef.current = target;
       cancelAnimationFrame(sheetAnimRef.current);
       if (instant || Math.abs(target - body.scrollTop) < 2) { body.scrollTop = target; return; }
       // カクッと飛ばず、ゆっくり出てゆっくり止まるスライド（歌いながら目で追える速さ）
