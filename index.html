@@ -3619,6 +3619,16 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     // 日本語環境のMacでは一部が和名になる（ささやき声=Whisper・道化=Jester・震え=Wobble等）ので両方はじく
     NOVELTY: /\b(albert|bad news|bahh|bells|boing|bubbles|cellos|deranged|eddy|flo|fred|good news|grandma|grandpa|hysterical|jester|junior|kathy|organ|ralph|reed|rocko|sandy|shelley|superstar|trinoids|whisper|wobble|zarvox)\b|ささやき|オルガン|スーパースター|トリノイド|ベル|道化|震え|鐘|泡|チェロ/i,
     PREF: ["samantha", "ava", "allison", "zoe", "nicky", "noelle", "joelle", "evan", "nathan", "aaron", "alex", "susan", "vicki", "victoria", "tom", "google us english", "google", "microsoft"],
+    // 単語タップは記号を落としてから渡すため、略語が裸のまま届いて綴り読みされる（Mrs→エム・アール・エス）
+    // → 読み上げに渡す文字だけ言い換える（画面の字は変えない）。文（スペース入り）はそのまま
+    SAY: { mr: "mister", mrs: "missus", ms: "miz", dr: "doctor", jr: "junior", sr: "senior", mt: "mount", vs: "versus", etc: "et cetera", feat: "featuring" },
+    wordify(w) {
+      if (/\s/.test(w)) return w;
+      const key = w.toLowerCase().replace(/[^a-z]/g, "");
+      if (this.SAY[key]) return this.SAY[key];
+      if (/^[A-Z]$/.test(w)) return w.toLowerCase(); // 大文字1字は「キャピタルI」と注釈読みする声がいる
+      return w;
+    },
     list() {
       const vs = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
       const en = vs.filter((v) => /^en([-_]|$)/i.test(v.lang || ""));
@@ -3649,7 +3659,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (!window.speechSynthesis) return false;
       if (!this.voice) this.pick();
       try { speechSynthesis.cancel(); } catch (e) {}
-      const u = new SpeechSynthesisUtterance(word);
+      const u = new SpeechSynthesisUtterance(this.wordify(word));
       if (this.voice) u.voice = this.voice;
       u.lang = this.voice ? this.voice.lang : "en-US";
       u.rate = 0.9;
@@ -5853,6 +5863,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       timer: 0, safeTimer: 0, trayTimer: 0, estTimer: 0, utter: null, startedAt: 0,
     });
     const userScrollRef = useRef(0);    // 手動スクロールした時刻（自動追従の一時停止）
+    const sheetAnimRef = useRef(0);     // 追従スライドのrAF（指スクロールで即中止＝指が勝つ）
     const prevCurRef = useRef(null);
     const recIO = useRef({ stream: null, mr: null, chunks: [], url: null, voice: null, range: null }); // 🎙 録音の実体（メモリのみ・保存しない）
     const recFnRef = useRef({});        // interval監視から最新のrec関数を呼ぶための橋
@@ -5953,7 +5964,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     /* 歌詞シート: 現在行の追従スクロール＋画面外なら「▼いまの行へ」ピル */
     useEffect(() => {
       if (!sheetOn) { setShowFollowPill(false); prevCurRef.current = null; return; }
-      const openId = setTimeout(() => centerCur(), 30); // 開いた瞬間に現在行をセンターへ
+      const openId = setTimeout(() => scrollCur(true), 30); // 開いた瞬間は迷いなくパッと現在行の上部へ
       const iv = setInterval(() => {
         const body = sheetBodyRef.current;
         if (!body) return;
@@ -5961,7 +5972,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         const cid = cur ? cur.id : null;
         if (cid !== prevCurRef.current) {
           prevCurRef.current = cid;
-          if (AE.playing && Date.now() - userScrollRef.current > 4000) centerCur();
+          if (AE.playing && Date.now() - userScrollRef.current > 4000) scrollCur();
         }
         const el = body.querySelector(".sheet-row.cur");
         let off = false;
@@ -5971,7 +5982,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         }
         setShowFollowPill(off);
       }, 400);
-      return () => { clearTimeout(openId); clearInterval(iv); };
+      return () => { clearTimeout(openId); clearInterval(iv); cancelAnimationFrame(sheetAnimRef.current); };
     }, [sheetOn]);
 
     /* 歌詞シートの表示設定（和訳・文字サイズ・ペンの道具と色）はブラウザに記憶。インク自体は保存しない */
@@ -6185,11 +6196,23 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       setAnnotOn(nv);
       doFlash(nv ? "💡 注釈を表示" : "💡 注釈をかくす", nv ? "歌詞の語の下に、意味がそっと出ます" : (student ? "💡 でいつでも出せます" : "G でいつでも出せます"));
     };
-    const centerCur = () => {
+    const scrollCur = (instant) => { // いま歌っている行を画面の上部へ（和訳・注釈で行が背高でも、下に「次に歌う行」が見える）
       const body = sheetBodyRef.current;
       if (!body) return;
       const el = body.querySelector(".sheet-row.cur");
-      if (el) body.scrollTop = Math.max(0, el.offsetTop - body.clientHeight * 0.35);
+      if (!el) return;
+      const target = Math.max(0, Math.min(el.offsetTop - body.clientHeight * 0.12, body.scrollHeight - body.clientHeight));
+      cancelAnimationFrame(sheetAnimRef.current);
+      if (instant || Math.abs(target - body.scrollTop) < 2) { body.scrollTop = target; return; }
+      // カクッと飛ばず、ゆっくり出てゆっくり止まるスライド（歌いながら目で追える速さ）
+      const start = body.scrollTop, dist = target - start, t0 = performance.now(), dur = 600;
+      const ease = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+      const step = (now) => {
+        const t = Math.min(1, (now - t0) / dur);
+        body.scrollTop = start + dist * ease(t);
+        if (t < 1) sheetAnimRef.current = requestAnimationFrame(step);
+      };
+      sheetAnimRef.current = requestAnimationFrame(step);
     };
     const sheetLineTap = (l, n) => {
       if (stRef.current.rec) { recLineTap(l); return; } // 🎙中の行タップ=はんいえらび
@@ -6929,7 +6952,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         ${sheetOn && html`<${SheetView}
           projRef=${projRef} jaMode=${jaMode} scale=${sheetScale} lastId=${lastPlayedRef.current}
           spokenRef=${spokenRef} onLineTap=${sheetLineTap} onLoopTap=${sheetLoopTap} onWordTap=${sheetWordTap}
-          bodyRef=${sheetBodyRef} onUserScroll=${() => { userScrollRef.current = Date.now(); }}
+          bodyRef=${sheetBodyRef} onUserScroll=${() => { userScrollRef.current = Date.now(); cancelAnimationFrame(sheetAnimRef.current); }}
           maskMode=${maskMode} openSet=${openSet} onHoleTap=${holeTap} onMaskToggle=${maskToggle}
           readRef=${readRef} onReadTap=${readRowTap} annotOn=${annotOn} recInfo=${recSel}
           penActive=${penOn} penFrame=${penTool === "eraser" ? "eraser" : PEN_COLORS[penColor]}
@@ -7021,7 +7044,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
             </div>
           </div>`}
         ${sheetOn && showFollowPill && html`
-          <button className="sheet-follow" onClick=${() => { userScrollRef.current = 0; centerCur(); }}>▼ いまの行へ</button>`}
+          <button className="sheet-follow" onClick=${() => { userScrollRef.current = 0; scrollCur(); }}>▼ いまの行へ</button>`}
         ${readTrayOn && readRef.current.line && (() => { // 🔈 よみトレイ（読み上げた行の道具・自動では閉じない）
           const r = readRef.current;
           const active = r.phase !== "idle";
