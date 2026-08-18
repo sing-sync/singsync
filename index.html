@@ -762,6 +762,18 @@ body.player .present-ui{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
 .pb-detail{position:absolute;bottom:calc(36px + env(safe-area-inset-bottom));font-size:11px;color:var(--text-disabled);
   max-width:90vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
+/* 📂 曲パックえらび（Teams配布の入り口 ?pick） */
+.pb-saved{width:min(480px,86vw);display:flex;flex-direction:column;gap:8px}
+.pb-saved-h{font-size:12px;color:var(--text-disabled)}
+.pb-saved-row{display:flex;gap:8px}
+.pb-saved-open{flex:1;height:48px;border-radius:12px;background:var(--bg-panel);border:1px solid var(--border);
+  color:var(--text-primary);font-size:15px;font-weight:700;display:flex;align-items:center;justify-content:space-between;padding:0 16px}
+.pb-saved-open .sz{color:var(--text-disabled);font-size:11px;font-weight:400;margin-left:10px;flex:none}
+.pb-saved-open:hover{border-color:var(--accent)}
+.pb-saved-del{width:48px;height:48px;flex:none;border-radius:12px;background:var(--bg-panel);border:1px solid var(--border);color:var(--text-disabled)}
+.pb-saved-del:hover{color:var(--danger);border-color:var(--danger)}
+.pb-pick-err{color:var(--warning);font-size:14px;max-width:min(480px,86vw);line-height:1.8}
+
 /* はじめてガイド（1枚だけのコーチマーク） */
 .pb-guide{position:absolute;inset:0;z-index:40;background:rgba(0,0,0,.74);
   display:flex;align-items:center;justify-content:center;padding:24px;cursor:pointer}
@@ -1159,14 +1171,18 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   const APP_KEY = "lyric-pv:autosave:v1";
   const FLAG_KEY = "lyric-pv:flags:v1";
   const PUB_BASE_KEY = "lyric-pv:pubBase:v1";       // 📲 iPad配布: 配布先URL（一度だけ設定）
+  const DIST_MODE_KEY = "lyric-pv:distMode:v1";     // 📲 配りかた: "url"=QRでネット配信 / "teams"=Teamsでファイル配布
   const PLAYER_GUIDE_KEY = "lyric-pv:playerGuide:v1"; // 生徒プレイヤーのはじめてガイド既読
 
   /* 📲 生徒プレイヤー判定（?song=songs/xxx.pack.json で起動）
      ・songs/ 配下の相対パスしか受けない（細工URLで任意先をfetchさせない・パス遡上防止）
+     ・?pick ＝ 📂 Teams配布の入り口（fetchせず、端末に配られた曲パックのファイルをえらんでひらく）
      ・パラメータが無ければ null ＝ いつもの編集アプリ（file:// 含め完全に従来どおり） */
   const PLAYER = (() => {
     try {
-      const q = new URLSearchParams(location.search).get("song");
+      const sp = new URLSearchParams(location.search);
+      if (sp.has("pick")) return { pick: true };
+      const q = sp.get("song");
       if (!q) return null;
       if (!/^songs\/[A-Za-z0-9._-]+\.json$/.test(q) || q.includes("..")) return { badUrl: true, url: q };
       return { url: q };
@@ -1668,6 +1684,107 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     async prune(valid) { // valid に無いキーを削除（プロジェクト切替時の掃除）
       const ks = await this.keys();
       for (const k of ks) if (!valid.includes(k)) await this.del(k);
+    },
+  };
+
+  // 📁 素材フォルダからまとめて復元
+  // .lyricpv には曲・画像・動画の本体が入らないため、別のPCではキャッシュが無く全て「見つかりません」になる。
+  // → 素材を入れたフォルダを1回選べば、記録済みのファイル名（同名が複数あればサイズ）で照合して一気に読み込む。
+  //   サブフォルダも可（webkitdirectoryは中身を再帰的にすべて返す）。一致した素材はキャッシュにも入れて次回から自動。
+  async function restoreFromFolder(project, fileList, forceAudio) {
+    const files = Array.from(fileList || []).filter((f) => f && f.name && !f.name.startsWith(".")); // .DS_Store等は除外
+    const byName = new Map();
+    for (const f of files) { const a = byName.get(f.name) || []; a.push(f); byName.set(f.name, a); }
+    const pick = (name, size) => {
+      const c = byName.get(name);
+      if (!c || !c.length) return null;
+      return c.find((f) => f.size === size) || c[0];
+    };
+    const out = { audio: "skip", audioFile: null, fp: null, bgOk: 0, missNames: [], fixes: [] };
+    // 曲: まだ読み込めていないときだけ（鳴っている曲は触らない）。
+    // 再リンク画面から呼ばれたとき(forceAudio)は、前の曲が残っていても必ず照合し直す
+    if (project.audio && !project.audio.sample && (forceAudio || !(AE.ready && AE.url))) {
+      const f = pick(project.audio.fileName, project.audio.size);
+      if (!f) { out.audio = "none"; out.missNames.push(project.audio.fileName); }
+      else {
+        try {
+          const fp = await fingerprintFile(f);
+          await AE.load(f);
+          const dOk = !project.audio.duration || Math.abs(AE.duration - project.audio.duration) < 0.5;
+          out.audio = dOk && (!project.audio.fingerprint || fp === project.audio.fingerprint) ? "ok" : "mismatch";
+          out.audioFile = f; out.fp = fp;
+          mediaDB.put("audio", f);
+        } catch (e) { out.audio = "none"; out.missNames.push(project.audio.fileName); }
+      }
+    }
+    // 背景: 見つかっていないものだけ
+    for (const b of project.backgrounds || []) {
+      if (MediaLib.status(b.id) === "ready") continue;
+      const f = pick(b.fileName, b.size);
+      if (!f) { out.missNames.push(b.fileName || "(名前の記録なし)"); continue; }
+      const it = await MediaLib.add(b.id, f);
+      if (it.error) { MediaLib.remove(b.id); out.missNames.push(f.name); continue; }
+      mediaDB.put("bg:" + b.id, f);
+      out.bgOk++;
+      if (b.type !== it.kind || b.size !== f.size) out.fixes.push({ id: b.id, type: it.kind, size: f.size, fileName: f.name });
+    }
+    return out;
+  }
+
+  /* 📂 生徒プレイヤーの曲パック置き場（Teams配布・「まえにひらいた曲」）
+     ・保存するのは先生が配った曲パックそのもの（曲・画像・歌詞）。生徒の録音や書きこみは入らない
+     ・新しい順に5曲だけ保持（あふれたぶんは古い順に自動で消す）。容量不足などで保存できないときは黙って通常動作
+     ・消しかた＝一覧の✕、またはSafariの「サイトデータを削除」 */
+  const packDB = {
+    _p: null,
+    open() {
+      if (this._p) return this._p;
+      this._p = new Promise((res) => {
+        try {
+          const rq = indexedDB.open("singsync-packs", 1);
+          rq.onupgradeneeded = () => { rq.result.createObjectStore("packs"); };
+          rq.onsuccess = () => res(rq.result);
+          rq.onerror = () => res(null);
+        } catch (e) { res(null); }
+      });
+      return this._p;
+    },
+    async put(key, rec) {
+      const db = await this.open(); if (!db) return;
+      try {
+        db.transaction("packs", "readwrite").objectStore("packs").put(rec, key);
+        const all = await this.list();
+        for (const it of all.slice(5)) await this.del(it.key);
+      } catch (e) {}
+    },
+    async list() { // [{key,title,size,savedAt}] 新しい順（中身のblobは持たない＝一覧を軽く）
+      const db = await this.open(); if (!db) return [];
+      return new Promise((res) => {
+        try {
+          const st = db.transaction("packs").objectStore("packs");
+          const rk = st.getAllKeys(), rv = st.getAll();
+          rv.onsuccess = () => {
+            const keys = rk.result || [], vals = rv.result || [];
+            res(keys.map((k, i) => ({ key: k, title: (vals[i] || {}).title || String(k), size: (vals[i] || {}).size || 0, savedAt: (vals[i] || {}).savedAt || 0 }))
+              .sort((a, b) => b.savedAt - a.savedAt));
+          };
+          rv.onerror = () => res([]);
+        } catch (e) { res([]); }
+      });
+    },
+    async get(key) {
+      const db = await this.open(); if (!db) return null;
+      return new Promise((res) => {
+        try {
+          const rq = db.transaction("packs").objectStore("packs").get(key);
+          rq.onsuccess = () => res(rq.result || null);
+          rq.onerror = () => res(null);
+        } catch (e) { res(null); }
+      });
+    },
+    async del(key) {
+      const db = await this.open(); if (!db) return;
+      try { db.transaction("packs", "readwrite").objectStore("packs").delete(key); } catch (e) {}
     },
   };
 
@@ -4186,6 +4303,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
                 <button className="btn btn-primary" onClick=${() => fileRef.current.click()}>ファイルを選択</button>
                 <div className="sub">SunoからダウンロードしたMP3でOKです</div>`}
             ${error && html`<div style=${{ color: "var(--danger)", fontSize: "13px" }}>${error}</div>`}
+          </div>
+          <div className="sub" style=${{ fontSize: "12px", maxWidth: "480px", textAlign: "center", lineHeight: 1.7 }}>
+            💡 曲や背景の素材は、SingSync.html と同じ場所の「<b>素材</b>」フォルダに入れてから選ぶのがおすすめです。<br/>
+            フォルダごとコピーすれば、職場など別のPCでも「📁 素材フォルダからまとめて復元」で一度に開けます（.lyricpv に素材の本体は入りません）。
           </div>`}
         ${loaded && html`
           <div className="panel audio-card">
@@ -4300,12 +4421,15 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   const AUTO_DEFAULT = { on: false, by: "time", every: "normal", shuffle: true, order: [] };
   const BG_EVERY_LABELS = { short: "短め", normal: "ふつう", long: "長め" };
 
-  function DesignScreen({ project, onCommit, scrubRef, onToast }) {
+  function DesignScreen({ project, onCommit, scrubRef, onToast, onFolderRestore }) {
     const ov = project.style.overrides;
     const scaleLabel = Object.keys(FONT_SCALES).find((k) => FONT_SCALES[k] === (ov.fontScale || 1)) || "標準";
     const addRef = useRef(null);
+    const folderRef = useRef(null);
     const [, setTick] = useState(0);
     const tick = () => setTick((n) => n + 1);
+    // 別のPCで開いた直後など、素材が見あたらない背景（読み込み中はのぞく）
+    const missingBgs = MediaLib.missing(project).filter((b) => MediaLib.status(b.id) !== "loading");
 
     const addBgFiles = async (files) => {
       for (const f of Array.from(files)) {
@@ -4380,6 +4504,11 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           </div>
           <div className="side-section">
             <div className="side-title">背景（画像・動画）</div>
+            ${missingBgs.length > 0 && html`
+              <div style=${{ border: "1px solid var(--warning)", borderRadius: "8px", padding: "8px 10px", margin: "0 0 8px", display: "flex", flexDirection: "column", gap: "6px" }}>
+                <div className="sub" style=${{ fontSize: "12px" }}>⚠ ${missingBgs.length}件の背景が見つかりません（別のPCで開いたときなど）。素材を入れたフォルダを選ぶと、名前で照合してまとめて戻せます。</div>
+                <div><button className="btn btn-secondary btn-sm" onClick=${() => folderRef.current.click()}>📁 素材フォルダからまとめて復元</button></div>
+              </div>`}
             ${(project.backgrounds || []).length === 0 && html`
               <div className="sub" style=${{ fontSize: "12px", marginBottom: "8px" }}>
                 背景を入れなくても、プリセットのグラデーション背景で完成品になります。<br/>
@@ -4453,6 +4582,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
               </div>`}
             <input type="file" multiple accept="image/*,video/mp4,video/webm,.mp4,.webm,.mov" ref=${addRef} style=${{ display: "none" }}
               onChange=${(e) => { if (e.target.files.length) addBgFiles(e.target.files); e.target.value = ""; }} />
+            <input type="file" webkitdirectory="" directory="" multiple ref=${folderRef} style=${{ display: "none" }}
+              onChange=${async (e) => { if (e.target.files.length) { await onFolderRestore(e.target.files); tick(); } e.target.value = ""; }} />
           </div>
           <div className="side-section">
             <div className="side-title">調整</div>
@@ -4531,7 +4662,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (!v.endsWith("/")) v += "/";
       return v;
     };
-    const url = base && slugOk ? base + "?song=songs/" + slug + ".pack.json" : "";
+    // 配りかた: "url"=パックも公開ページに置く（QRだけで完結） / "teams"=パックはTeamsで配る（QRはプレイヤーの入り口?pick）
+    const [distMode, setDistMode] = useState(() => (store.get(DIST_MODE_KEY) === "teams" ? "teams" : "url"));
+    const teams = distMode === "teams";
+    const setDist = (m) => { store.set(DIST_MODE_KEY, m); setDistMode(m); };
+    const url = base ? (teams ? base + "?pick" : (slugOk ? base + "?song=songs/" + slug + ".pack.json" : "")) : "";
+    // 配布先がFirebase Hosting（web.app / firebaseapp.com）なら、手順や注意をFirebase向けに切り替える
+    const isFb = /\.web\.app|\.firebaseapp\.com/.test(base || "");
 
     useEffect(() => {
       let alive = true;
@@ -4546,7 +4683,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     const setNote = (v) => onCommit((np) => { np.pub = np.pub || { note: "", slug: "" }; np.pub.note = v.slice(0, 100); }, { coalesce: true });
     const saveBase = () => {
       const v = normBase(baseDraft);
-      if (!v) { onToast && onToast("配布先URLを入力してください（例: https://あなたのID.github.io/singsync/）"); return; }
+      if (!v) { onToast && onToast("配布先URLを入力してください（例: https://あなたのID.web.app/ や https://あなたのID.github.io/singsync/）"); return; }
       store.set(PUB_BASE_KEY, v);
       setBase(v); setBaseDraft(v); setEditBase(false);
     };
@@ -4593,7 +4730,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       div.innerHTML = '<div class="qp-title">♪ ' + esc(project.meta.title || "") + '</div>' +
         '<img src="' + c.toDataURL("image/png") + '" alt="QR">' +
         '<div class="qp-url">' + esc(result.url) + '</div>' +
-        '<div class="qp-steps">① カメラでQRコードを読みとる<br>② 「▶ はじめる」をタップ<br>③ 🎧 イヤホンがあると聞きやすいよ</div>';
+        '<div class="qp-steps">' + (teams
+          ? '① カメラでQRコードを読みとる<br>② 「📂 曲パックをえらぶ」→ Teamsで保存した曲のファイル<br>③ 「▶ はじめる」をタップ（🎧 イヤホンがあると聞きやすいよ）'
+          : '① カメラでQRコードを読みとる<br>② 「▶ はじめる」をタップ<br>③ 🎧 イヤホンがあると聞きやすいよ') + '</div>';
       document.body.appendChild(div);
       document.body.classList.add("printing-qr");
       let closed = false;
@@ -4607,20 +4746,28 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     return html`
       <div className="dist-card">
         <div className="dc-title">📲 iPadに配る（曲パック）</div>
-        <div className="dc-sub">GitHubのページに一度プレイヤーを置けば、あとは曲ごとの「曲パック」ファイルを足すだけで、生徒のiPadでこの曲を練習できます（穴あき・注釈・よみあげ・ペンもそのまま入ります）。はじめての方は、公開フォルダ「singsync-site」の <b>はじめかた.html</b> をご覧ください。</div>
+        <div className="dc-sub">インターネットの公開ページに一度プレイヤーを置けば、あとは曲ごとの「曲パック」ファイルを足すだけで、生徒のiPadでこの曲を練習できます（穴あき・注釈・よみあげ・ペンもそのまま入ります）。はじめての方は、公開フォルダ「singsync-site」の <b>はじめかた.html</b>（GitHub Pages）／学校のフィルタでGitHubが開けないときは <b>Firebaseへの引っこし.html</b>（.web.app）をご覧ください。</div>
         ${editBase ? html`
           <div className="dist-url">
             <span style=${{ fontSize: "13px", whiteSpace: "nowrap" }}>配布先URL</span>
-            <input placeholder="https://あなたのID.github.io/singsync/" value=${baseDraft}
+            <input placeholder="https://〜.web.app/ か https://〜.github.io/singsync/" value=${baseDraft}
               onInput=${(e) => setBaseDraft(e.target.value)} />
             <button className="btn btn-secondary btn-sm" onClick=${saveBase}>このURLをおぼえる</button>
           </div>
-          <div className="dc-sub">⚠ GitHub Pagesは「URLを知っていれば誰でも見られる」公開ページです（検索には載りにくく、QRを配った人だけが実質アクセスします）</div>`
+          <div className="dc-sub">⚠ どちらも「URLを知っていれば誰でも見られる」公開ページです（検索には載りにくく、QRを配った人だけが実質アクセスします）</div>`
         : html`
           <div className="dist-url">
             <span style=${{ fontSize: "12px", color: "var(--text-secondary)" }}>配布先: <b>${base}</b></span>
             <button className="btn btn-secondary btn-sm" onClick=${() => setEditBase(true)}>変更</button>
           </div>`}
+        <div className="dist-url">
+          <span style=${{ fontSize: "13px", whiteSpace: "nowrap" }}>配りかた</span>
+          <div className="segmented">
+            <button className=${!teams ? "on" : ""} onClick=${() => setDist("url")}>🌐 QRでネット配信</button>
+            <button className=${teams ? "on" : ""} onClick=${() => setDist("teams")}>💬 Teamsでファイル配布</button>
+          </div>
+        </div>
+        ${teams && html`<div className="dc-sub">曲パックは公開ページに置かず、<b>Teamsの授業チーム</b>に投稿して配ります（クラスの中だけに配れて、公開ページの転送量も気になりません）。QRはプレイヤーの入り口になり、生徒は「📂 曲パックをえらぶ」でTeamsのファイルをひらきます。</div>`}
         ${man && html`
           <div className="checklist">
             <div className=${"check-item " + (man.audio && man.audio.ok ? "ok" : "bad")}>
@@ -4631,7 +4778,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
             ${man.videos.map((v) => html`<div key=${v.id} className="check-item warn"><span className="mark">⚠</span>背景の動画「${v.fileName}」は入りません（その区間は残りの写真やグラデーションで表示されます）</div>`)}
             ${man.missing.map((v) => html`<div key=${v.id} className="check-item warn"><span className="mark">⚠</span>背景「${v.fileName}」が読み込まれていないため入りません（④デザインで再選択できます）</div>`)}
             <div className="check-item"><span className="mark">ℹ</span>穴あき${man.masks}語 ・ 注釈${man.notes}件 ・ 同期データも一緒に入ります ・ 合計 約${estMB.toFixed(1)} MB${estMB > 24 ? "" : "（生徒の読み込み目安: 学校Wi-Fiで10〜30秒）"}</div>
-            ${estMB > 24 && html`<div className="check-item warn"><span className="mark">⚠</span>24 MBを超えています。GitHubのブラウザアップロードは25 MBまでのため、GitHub Desktopでアップしてください（④デザインで背景写真を減らすと軽くなります）</div>`}
+            ${!teams && !isFb && estMB > 24 && html`<div className="check-item warn"><span className="mark">⚠</span>24 MBを超えています。GitHubのブラウザアップロードは25 MBまでのため、GitHub Desktopでアップしてください（④デザインで背景写真を減らすと軽くなります）</div>`}
+            ${!teams && isFb && estMB > 10 && html`<div className="check-item warn"><span className="mark">⚠</span>Firebaseの無料わくは<b>転送 1日360 MBまで</b>。このパック（約${estMB.toFixed(0)} MB）だと1日およそ${Math.max(1, Math.floor(360 / Math.max(1, estMB)))}台ぶんで止まります。クラスで使うには「💬 Teamsでファイル配布」に切り替えるか、④デザインで背景写真を減らして軽くしてください</div>`}
+            ${teams && html`<div className="check-item"><span className="mark">ℹ</span>このパックはTeamsに投稿して配ります（公開ページには置きません。プレイヤーだけが配信されるので転送量の心配なし）</div>`}
           </div>`}
         <div className="dist-slug">
           <span>ファイル名</span>
@@ -4639,7 +4788,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           <span>.pack.json</span>
           ${!slugOk && html`<span style=${{ color: "var(--danger)", fontSize: "12px" }}>半角の英数字とハイフンで入力してください</span>`}
         </div>
-        ${url && html`<div className="dist-urlprev">生徒が開くURL: ${url}</div>`}
+        ${url && html`<div className="dist-urlprev">${teams ? "プレイヤーの入り口URL: " : "生徒が開くURL: "}${url}</div>`}
         <div className="dist-slug"><span>先生からのひとこと（任意・生徒のタイトル画面に出ます）</span></div>
         <input placeholder="例: 今日は2番まで。穴あきは全部あけてOK！" maxLength=${100}
           value=${(project.pub && project.pub.note) || ""} onInput=${(e) => setNote(e.target.value)} />
@@ -4652,7 +4801,11 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
         ${phase === "done" && result && html`
           <div className="export-progress" style=${{ borderColor: "rgba(61,220,151,.4)", alignItems: "stretch" }}>
             <div style=${{ fontSize: "14px", fontWeight: 700, color: "var(--success)" }}>✓ 曲パックを書き出しました　${result.fname}（${(result.size / 1048576).toFixed(1)} MB）</div>
-            <div className="dc-sub">のこりの手順: ① ${result.fname} を<b>GitHub Desktopのリポジトリ</b>の「songs」フォルダに入れる（メニュー Repository → Show in Finder で開けます。Desktopのsingsync-siteは原本置き場＝入れてもPushされません）→ ② GitHub Desktopで Commit → Push → ③ 2〜3分待つと下のQRで開けます（Pushの前に読むと「曲が見つかりません」になります）</div>
+            ${teams
+              ? html`<div className="dc-sub">のこりの手順: ① ${result.fname} を<b>Teamsの授業チーム</b>に投稿（ふつうのファイル添付でOK）→ ② 生徒は下のQR（またはTeamsに貼ったプレイヤーのリンク）をひらく → ③ 「📂 曲パックをえらぶ」でTeamsから保存したファイルをえらぶ（2回目からは「まえにひらいた曲」からワンタップ）</div>`
+              : isFb
+              ? html`<div className="dc-sub">のこりの手順: ① ${result.fname} を公開フォルダ<b>「singsync-site」の「songs」</b>に入れる → ② 同じフォルダの<b>「デプロイ.command」をダブルクリック</b> → ③ 「✅ 公開できました」と出たら下のQRで開けます（くわしくは Firebaseへの引っこし.html）</div>`
+              : html`<div className="dc-sub">のこりの手順: ① ${result.fname} を<b>GitHub Desktopのリポジトリ</b>の「songs」フォルダに入れる（メニュー Repository → Show in Finder で開けます。Desktopのsingsync-siteは原本置き場＝入れてもPushされません）→ ② GitHub Desktopで Commit → Push → ③ 2〜3分待つと下のQRで開けます（Pushの前に読むと「曲が見つかりません」になります）</div>`}
             ${result.url ? html`
               <div className="qr-panel">
                 <canvas ref=${qrRef} className="qr-canvas"></canvas>
@@ -4801,7 +4954,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
             </div>`}
             ${MediaLib.missing(project).slice(0, 2).map((b) => html`
               <div key=${b.id} className="check-item warn">
-                <span className="mark">⚠</span>背景「${b.fileName}」が読み込まれていません（④デザインで再選択できます。このままだとプリセット背景で書き出されます）
+                <span className="mark">⚠</span>背景「${b.fileName}」が読み込まれていません（④デザインの「📁素材フォルダからまとめて復元」か再選択で戻せます。このままだとプリセット背景で書き出されます）
               </div>`)}
           </div>
 
@@ -4888,8 +5041,9 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
   }
 
   /* ---------- 音源の再リンクモーダル ---------- */
-  function RelinkModal({ audioMeta, onPicked, onSkip }) {
+  function RelinkModal({ audioMeta, onPicked, onSkip, onFolder }) {
     const fileRef = useRef(null);
+    const folderRef = useRef(null);
     const [warn, setWarn] = useState(null);
     const [busy, setBusy] = useState(false);
     const pendingFile = useRef(null);
@@ -4924,6 +5078,10 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
               🎵 前回のファイル: <b>${audioMeta.fileName}</b>
               ${audioMeta.duration ? html`<span className="sub tnum">（${fmtDur(audioMeta.duration)}）</span>` : ""}
             </div>
+            <div className="panel" style=${{ padding: "12px 14px", fontSize: "13px", display: "flex", flexDirection: "column", gap: "8px" }}>
+              <div>📁 別のPCで開いたときは、曲・画像・動画を入れた<b>素材フォルダ</b>を選ぶと、背景もまとめて復元できます（ファイル名で照合・中のフォルダ分けは自由）</div>
+              <div><button className="btn btn-secondary btn-sm" disabled=${busy} onClick=${() => folderRef.current.click()}>📁 素材フォルダからまとめて復元</button></div>
+            </div>
             ${warn && html`<div style=${{ color: "var(--warning)", fontSize: "13px" }}>⚠ ${warn}</div>`}
             ${busy && html`<div className="sub">読み込んでいます…</div>`}
           </div>
@@ -4936,6 +5094,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           </div>
           <input type="file" accept=".mp3,.wav,audio/*" ref=${fileRef} style=${{ display: "none" }}
             onChange=${(e) => { if (e.target.files.length) check(e.target.files[0]); e.target.value = ""; }} />
+          <input type="file" webkitdirectory="" directory="" multiple ref=${folderRef} style=${{ display: "none" }}
+            onChange=${(e) => { if (e.target.files.length) onFolder(e.target.files); e.target.value = ""; }} />
         </div>
       </div>`;
   }
@@ -4982,7 +5142,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
               <b>Q. 1つの単語だけ長く伸びる歌い方に合わせたい</b><br/>→ ③同期の波形で行を選び、単語の縦線をドラッグしてください。<br/>
               <b>Q. 背景に写真や動画を使いたい</b><br/>→ ④デザインの「背景」で追加できます。2枚目からは「どの行から表示するか」を選べます（2番の頭や間奏明けで切り替えるのがおすすめ）。Canva素材の流用はライセンス上NGなので、PexelsやPixabayなどのフリー素材をどうぞ。<br/>
               <b>Q. 開き直すたびにファイルを選ぶのが面倒</b><br/>→ 曲と背景はブラウザ内に自動でキャッシュされます。ホームの「前回の続き」から開けば、選び直しは不要です（.lyricpvファイルから開いた場合も、同じ曲なら自動で読み込まれます）。<br/>
-              <b>Q. 作業を保存したい</b><br/>→ 2秒ごとに自動保存されています。別PCに持ち運ぶときはヘッダーの「保存」で .lyricpv ファイルを書き出せます。
+              <b>Q. 作業を保存したい</b><br/>→ 2秒ごとに自動保存されています。別PCに持ち運ぶときはヘッダーの「保存」で .lyricpv ファイルを書き出せます。<br/>
+              <b>Q. 職場など別のPCで開いたら、画像や曲が「見つかりません」になる</b><br/>→ .lyricpv には曲・画像・動画の<b>本体は入っていません</b>（このPCのブラウザ内キャッシュから復元しているため、別のPCでは見つかりません）。SingSync.html と同じ場所に「<b>素材</b>」フォルダを作って曲・画像・動画をそこに入れておき、<b>フォルダごと</b>（SingSyncフォルダごとでもOK）OneDriveなどでコピーしてください。開いたときに出る「曲のファイルをもう一度選んでください」画面か、④デザインの「📁 素材フォルダからまとめて復元」でそのフォルダを選ぶと、ファイル名で照合して<b>曲も背景も一度に</b>戻ります（フォルダの中の整理のしかたは自由。「使用画像」「使用動画」と分けてあっても中まで探します）。一度読み込めば、そのPCでは次回から自動です。
             </div>
           </div>
         </div>
@@ -7107,7 +7268,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     version:  { h: "新しいプレイヤーが必要です", m: "先生に「プレイヤーの更新が必要みたい」とつたえてください。", retry: false },
     load:     { h: "よみこみに失敗しました", m: "もう一度ためしてみてね。なおらないときは先生につたえてください。", retry: true },
   };
-  function PlayerBoot({ st, onStart }) {
+  function PlayerBoot({ st, onStart, onPickFile, onPickSaved, onPickDel }) {
+    const fileRef = useRef(null);
     const [slow, setSlow] = useState(false);
     useEffect(() => { // 15秒たっても読み込み中ならひとこと（学校Wi-Fi対策）
       if (st.phase !== "loading") { setSlow(false); return; }
@@ -7124,6 +7286,35 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           <div className="pb-msg">${E.m}</div>
           ${E.retry && html`<button className="pb-start" onClick=${() => location.reload()}>もう一度よみこむ</button>`}
           ${st.error && st.error.detail && html`<div className="pb-detail">くわしい情報: ${st.error.detail}</div>`}
+          <div className="pb-credit">SingSync プレイヤー</div>
+        </div>`;
+    }
+    if (st.phase === "pick") { // 📂 Teams配布の入り口: 配られた曲パックのファイルをえらぶ
+      const err = st.pickErr === "version"
+        ? "この曲パックには新しいプレイヤーが必要です。先生につたえてください"
+        : st.pickErr === "gone"
+          ? "この曲は端末に残っていませんでした。もう一度「📂 曲パックをえらぶ」からひらいてね"
+          : st.pickErr
+            ? "これは曲パックのファイルではないみたい。先生からもらった「.pack.json」のファイルをえらんでね"
+            : null;
+      return html`
+        <div className="pb-root">
+          <div className="pb-note">♪</div>
+          <div className="pb-err-h">きょうの曲をひらこう</div>
+          ${err && html`<div className="pb-pick-err">⚠ ${err}</div>`}
+          ${(st.saved || []).length > 0 && html`
+            <div className="pb-saved">
+              <div className="pb-saved-h">まえにひらいた曲（このiPadがおぼえています）</div>
+              ${st.saved.map((s) => html`
+                <div key=${s.key} className="pb-saved-row">
+                  <button className="pb-saved-open" onClick=${() => onPickSaved(s.key)}>🎵 ${s.title}<span className="sz">${(s.size / 1048576).toFixed(1)} MB</span></button>
+                  <button className="pb-saved-del" title="この曲をわすれる" onClick=${() => onPickDel(s.key)}>✕</button>
+                </div>`)}
+            </div>`}
+          <button className="pb-start" onClick=${() => fileRef.current.click()}>📂 曲パックをえらぶ</button>
+          <div className="pb-msg">先生がTeamsで送った「.pack.json」のファイルをえらんでね<br />（Teamsでファイルをいったん「保存」してから、ここでえらぶとうまくいくよ）</div>
+          <input type="file" accept=".json,application/json" ref=${fileRef} style=${{ display: "none" }}
+            onChange=${(e) => { if (e.target.files.length) onPickFile(e.target.files[0]); e.target.value = ""; }} />
           <div className="pb-credit">SingSync プレイヤー</div>
         </div>`;
     }
@@ -7195,9 +7386,13 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     stateRef.current = { project, screen, selId, selBoundary, tap, modal, loopId, present };
 
     /* ----- 📲 生徒プレイヤー: 起動時に曲パックを読み込む ----- */
-    const [player, setPlayer] = useState(() => (PLAYER ? { phase: "loading", received: 0, total: 0 } : null));
+    const [player, setPlayer] = useState(() => (PLAYER ? (PLAYER.pick ? { phase: "pick", saved: [] } : { phase: "loading", received: 0, total: 0 }) : null));
     useEffect(() => {
       if (!PLAYER) return;
+      if (PLAYER.pick) { // 📂 Teams配布の入り口: fetchせず「まえにひらいた曲」の一覧だけ用意
+        packDB.list().then((saved) => setPlayer((p) => (p && p.phase === "pick" ? { ...p, saved } : p)));
+        return;
+      }
       if (PLAYER.badUrl) { setPlayer({ phase: "error", error: { kind: "badurl" } }); return; }
       let alive = true;
       (async () => {
@@ -7254,6 +7449,46 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       try { const u = new SpeechSynthesisUtterance(" "); u.volume = 0; speechSynthesis.speak(u); } catch (e) {}
       goFullscreen();
       setPresent(true);
+    };
+
+    // 📂 ファイルから曲パックをひらく（Teams配布: ネットから取らず、端末にあるファイルを読む）
+    const openPackFile = async (file, fromSaved) => {
+      setPlayer({ phase: "preparing" });
+      try {
+        const text = await file.text();
+        let up;
+        try { up = unpackSongPack(JSON.parse(text)); }
+        catch (e) { if (!e.kind) e.kind = "format"; throw e; }
+        try { await AE.load(up.audioFile); }
+        catch (e) { const err = new Error("audio"); err.kind = "format"; throw err; }
+        MediaLib.clear();
+        for (const bg of up.bgFiles) await MediaLib.add(bg.id, bg.file);
+        setProject(up.project);
+        setAudioEpoch((n) => n + 1);
+        try { document.title = "♪ " + up.title + " — SingSync"; } catch (e) {}
+        setPlayer({ phase: "title", title: up.title, note: up.note, excluded: up.excludedCount });
+        // ひらけた曲だけおぼえる（次回はワンタップ）。保存できなくても支障なし
+        if (!fromSaved) packDB.put(file.name || up.title, { title: up.title, size: file.size, savedAt: Date.now(), blob: file });
+      } catch (e) {
+        console.error(e);
+        const saved = await packDB.list();
+        setPlayer({ phase: "pick", saved, pickErr: (e && e.kind) === "version" ? "version" : "format" });
+      }
+    };
+    const openSavedPack = async (key) => {
+      const rec = await packDB.get(key);
+      if (!rec || !rec.blob) {
+        const saved = await packDB.list();
+        setPlayer({ phase: "pick", saved, pickErr: "gone" });
+        return;
+      }
+      packDB.put(key, { ...rec, savedAt: Date.now() }); // ひらいた曲を一覧の先頭へ（自動掃除の順もこの順）
+      await openPackFile(rec.blob, true);
+    };
+    const delSavedPack = async (key) => {
+      await packDB.del(key);
+      const saved = await packDB.list();
+      setPlayer((p) => (p && p.phase === "pick" ? { ...p, saved } : p));
     };
 
     /* ----- 起動時: 自動保存の読み込み（ホームのカード用） ----- */
@@ -7528,7 +7763,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       a.download = (s.project.meta.title || "project").replace(/[\\/:*?"<>|]/g, "_") + ".lyricpv";
       a.click();
       setTimeout(() => URL.revokeObjectURL(a.href), 5000);
-      showToast("プロジェクトファイル（.lyricpv）を保存しました");
+      showToast("プロジェクトファイル（.lyricpv）を保存しました（曲・画像の本体は入りません。別のPCへは素材フォルダもいっしょに）");
     };
 
     const openProject = async (p) => {
@@ -7589,6 +7824,26 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       } catch (e) {
         showToast("読み込めませんでした。.lyricpv ファイルを選んでください");
       }
+    };
+
+    // 📁 素材フォルダからまとめて復元（曲の再リンク画面と④デザインの両方から使う）
+    const restoreFolder = async (fileList, forceAudio) => {
+      const r = await restoreFromFolder(stateRef.current.project, fileList, forceAudio);
+      // 照合できた実ファイルに合わせてメタを直す（同じファイルなら差分ゼロ＝コミットしない）
+      if (r.audioFile || r.fixes.length) {
+        commit((np) => {
+          if (r.audioFile && np.audio) { np.audio.fileName = r.audioFile.name; np.audio.size = r.audioFile.size; np.audio.duration = AE.duration; np.audio.fingerprint = r.fp; }
+          for (const fx of r.fixes) { const bb = np.backgrounds.find((x) => x.id === fx.id); if (bb) { bb.type = fx.type; bb.size = fx.size; bb.fileName = fx.fileName; } }
+        }, {});
+      }
+      setAudioEpoch((n) => n + 1);
+      const got = [r.audioFile ? "曲" : null, r.bgOk ? `背景${r.bgOk}件` : null].filter(Boolean).join("と");
+      const missShort = r.missNames.slice(0, 3).join("、") + (r.missNames.length > 3 ? " ほか" : "");
+      if (got && !r.missNames.length) showToast(`📁 ${got}をまとめて読み込みました` + (r.audio === "mismatch" ? "（曲の内容が保存時と異なるようです。同期のずれにご注意ください）" : ""));
+      else if (got) showToast(`📁 ${got}を読み込みました。見つからないもの: ${missShort}（同じ名前でフォルダに入れると読み込めます）`);
+      else if (r.missNames.length) showToast(`フォルダに同じ名前のファイルがありませんでした（${missShort}）。ファイル名で照合しています`);
+      else showToast("読み込みが必要な素材はありませんでした");
+      return r;
     };
 
     const openSample = async () => {
@@ -7653,7 +7908,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
     if (PLAYER) {
       return html`
         <div className="app-shell">
-          ${!present && html`<${PlayerBoot} st=${player || { phase: "loading", received: 0, total: 0 }} onStart=${startPlayer} />`}
+          ${!present && html`<${PlayerBoot} st=${player || { phase: "loading", received: 0, total: 0 }} onStart=${startPlayer}
+            onPickFile=${openPackFile} onPickSaved=${openSavedPack} onPickDel=${delSavedPack} />`}
           ${present && html`<${PresentOverlay} project=${project} student=${true} studentTitle=${player && player.title}
             onExit=${() => { AE.pause(); setPresent(false); }} onCommit=${commit} />`}
           ${toast && html`
@@ -7715,7 +7971,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           onCommitLines=${commitLines} onLoop=${toggleLoop}
           onTapStart=${startTap} onTapFrom=${startTap} onMoveLineStart=${moveLineStart} />`}
         ${screen === "design" && html`<${DesignScreen} project=${project} onCommit=${commit} scrubRef=${scrubRef}
-          onToast=${(msg, al) => showToast(msg, al, al ? undo : null)} />`}
+          onToast=${(msg, al) => showToast(msg, al, al ? undo : null)} onFolderRestore=${restoreFolder} />`}
         ${screen === "export" && html`<${ExportScreen} project=${project} scrubRef=${scrubRef} onToast=${showToast} onCommit=${commit} />`}
 
         ${screen !== "home" && html`
@@ -7743,7 +7999,8 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
             mediaDB.put("audio", file); // 次回から選び直し不要
             showToast(force ? "このファイルで続行します（同期のずれにご注意ください）" : "曲を読み込みました。前回の続きから作業できます");
           }}
-          onSkip=${() => { setModal(null); showToast("①取り込みで、あとから曲を選べます"); }} />`}
+          onSkip=${() => { setModal(null); showToast("①取り込みで、あとから曲を選べます"); }}
+          onFolder=${async (files) => { setModal(null); await restoreFolder(files, true); }} />`}
         ${modal && modal.type === "confirmDeleteRecent" && html`
           <div className="modal-backdrop">
             <div className="modal" style=${{ maxWidth: "420px" }}>
