@@ -762,7 +762,7 @@ body.player .present-ui{padding-bottom:calc(14px + env(safe-area-inset-bottom))}
 .pb-detail{position:absolute;bottom:calc(36px + env(safe-area-inset-bottom));font-size:11px;color:var(--text-disabled);
   max-width:90vw;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 
-/* 📂 曲パックえらび（Teams配布の入り口 ?pick） */
+/* 📂 曲パックえらび（Teams配布の入り口 #pick） */
 .pb-saved{width:min(480px,86vw);display:flex;flex-direction:column;gap:8px}
 .pb-saved-h{font-size:12px;color:var(--text-disabled)}
 .pb-saved-row{display:flex;gap:8px}
@@ -1176,12 +1176,14 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
 
   /* 📲 生徒プレイヤー判定（?song=songs/xxx.pack.json で起動）
      ・songs/ 配下の相対パスしか受けない（細工URLで任意先をfetchさせない・パス遡上防止）
-     ・?pick ＝ 📂 Teams配布の入り口（fetchせず、端末に配られた曲パックのファイルをえらんでひらく）
+     ・#pick ＝ 📂 Teams配布の入り口（fetchせず、端末に配られた曲パックのファイルをえらんでひらく）。
+       GCS配信（storage.googleapis.com）は「?」をAPIパラメータと解釈しうるためhashを正とし、
+       配布済みQRのための旧形式 ?pick も後方互換で受ける
      ・パラメータが無ければ null ＝ いつもの編集アプリ（file:// 含め完全に従来どおり） */
   const PLAYER = (() => {
     try {
       const sp = new URLSearchParams(location.search);
-      if (sp.has("pick")) return { pick: true };
+      if (location.hash === "#pick" || sp.has("pick")) return { pick: true };
       const q = sp.get("song");
       if (!q) return null;
       if (!/^songs\/[A-Za-z0-9._-]+\.json$/.test(q) || q.includes("..")) return { badUrl: true, url: q };
@@ -4662,11 +4664,16 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
       if (!v.endsWith("/")) v += "/";
       return v;
     };
-    // 配りかた: "url"=パックも公開ページに置く（QRだけで完結） / "teams"=パックはTeamsで配る（QRはプレイヤーの入り口?pick）
+    // 配りかた: "url"=パックも公開ページに置く（QRだけで完結） / "teams"=パックはTeamsで配る（QRはプレイヤーの入り口#pick）
     const [distMode, setDistMode] = useState(() => (store.get(DIST_MODE_KEY) === "teams" ? "teams" : "url"));
     const teams = distMode === "teams";
     const setDist = (m) => { store.set(DIST_MODE_KEY, m); setDistMode(m); };
-    const url = base ? (teams ? base + "?pick" : (slugOk ? base + "?song=songs/" + slug + ".pack.json" : "")) : "";
+    // 入り口URLは「いま開いている場所」から動的に生成（GCSは「/」→index.htmlの変換が無く、
+    // storage.googleapis.com は「?」をAPIパラメータと解釈しうるため #pick 形式。どのドメインに置いても正しくなる）。
+    // file:// で編集中はoriginが壊れるので、配布先URL設定から index.html#pick を組み立てる予備経路に落とす
+    const isHttp = /^https?:$/.test(location.protocol);
+    const pickUrl = isHttp ? location.origin + location.pathname + "#pick" : (base ? base + "index.html#pick" : "");
+    const url = teams ? pickUrl : (base && slugOk ? base + "?song=songs/" + slug + ".pack.json" : "");
     // 配布先がFirebase Hosting（web.app / firebaseapp.com）なら、手順や注意をFirebase向けに切り替える
     const isFb = /\.web\.app|\.firebaseapp\.com/.test(base || "");
 
@@ -4789,6 +4796,7 @@ var qrcode=function(){var t=function(t,r){var e=t,n=g[r],o=null,i=0,a=null,u=[],
           ${!slugOk && html`<span style=${{ color: "var(--danger)", fontSize: "12px" }}>半角の英数字とハイフンで入力してください</span>`}
         </div>
         ${url && html`<div className="dist-urlprev">${teams ? "プレイヤーの入り口URL: " : "生徒が開くURL: "}${url}</div>`}
+        ${teams && !isHttp && html`<div className="dc-sub">ℹ いまはファイルから直接開いているため、入り口URLは配布先URL（上の欄）から組み立てます。公開ページ（配布先URLの index.html）を開いて書き出すと、その場所から自動で正しいURLになります</div>`}
         <div className="dist-slug"><span>先生からのひとこと（任意・生徒のタイトル画面に出ます）</span></div>
         <input placeholder="例: 今日は2番まで。穴あきは全部あけてOK！" maxLength=${100}
           value=${(project.pub && project.pub.note) || ""} onInput=${(e) => setNote(e.target.value)} />
